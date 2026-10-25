@@ -15,7 +15,7 @@
   <!-- Babel Standalone -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 </head>
-<body class="bg-[#07090e] text-slate-200 font-sans min-h-screen flex flex-col">
+<body class="bg-[#07090e] text-slate-200 font-sans min-h-screen flex flex-col justify-between">
   
   <div id="root" class="flex-1 flex flex-col"></div>
 
@@ -35,27 +35,15 @@
         summary: 'The VIP enrollment package ($4,999) explicitly advertised daily personalized live coaching and trade reviews by the master trader. In reality, all direct support was handled by an unmonitored automated Telegram bot sending recycled chart signals from 2023.',
         category: 'Misleading Claims',
         status: 'Approved'
-      },
-      {
-        id: 'CMP-2026-074',
-        submitter: 'Anonymous',
-        relationship: 'Student',
-        courseDate: 'January 2026',
-        dateSubmitted: '2026-03-28',
-        title: 'Refund Policy Denied After 48 Hours Despite 30-Day Guarantee',
-        summary: 'The promotional page offered a "No-Questions-Asked 30-Day Refund Policy". When requested on day 5 due to missing module materials, support claimed that viewing >10% of video content rendered the account non-refundable according to hidden terms.',
-        category: 'Refund Policy',
-        status: 'Approved'
       }
     ];
 
     const INITIAL_EVIDENCE = [
-      { id: 'EV-101', title: 'Refund Policy Sales Page Screenshot', category: 'Course Advertisements', date: '2026-03-29', description: 'Promotional landing page displaying bold "30-Day Guarantee" text.', status: 'Verified' },
-      { id: 'EV-102', title: 'Telegram Support Log Transcript', category: 'Chat Excerpts', date: '2026-04-10', description: 'Exported chat history demonstrating automated macro replies.', status: 'Verified' }
+      { id: 'EV-101', title: 'Refund Policy Sales Page Screenshot', category: 'Course Advertisements', date: '2026-03-29', description: 'Promotional landing page displaying bold "30-Day Guarantee" text.', status: 'Verified' }
     ];
 
     const INITIAL_RESPONSES = [
-      { id: 'RESP-001', relatedComplaintId: 'CMP-2026-089', date: '2026-04-15', author: '10xTrader Official Operations Team', status: 'Verified Authentic', text: 'We acknowledge that during our high-volume enrollment week our VIP queue experienced latency. We have contacted affected users for partial refunds.' }
+      { id: 'RESP-001', relatedComplaintId: 'CMP-2026-089', date: '2026-04-15', author: '10xTrader Official Operations Team', status: 'Verified Authentic', text: 'We acknowledge that during our high-volume enrollment week our VIP queue experienced latency.' }
     ];
 
     function App() {
@@ -74,6 +62,7 @@
         title: '',
         summary: '',
         category: 'Course Content',
+        rawFile: null,
         consent: false
       });
       const [submissionSuccess, setSubmissionSuccess] = useState(false);
@@ -96,37 +85,60 @@
         setIsUploading(true);
 
         try {
-          const formData = new URLSearchParams();
-          formData.append("title", submitForm.title);
-          formData.append("summary", submitForm.summary);
-          formData.append("category", submitForm.category);
-          formData.append("relationship", submitForm.relationship);
-          formData.append("privateName", submitForm.privateName);
-          formData.append("privateEmail", submitForm.privateEmail);
+          let base64File = "";
+          let fileName = "";
+          let fileType = "";
 
-          await fetch(GOOGLE_SCRIPT_URL, {
-            method: "POST",
-            mode: "no-cors",
-            headers: { "Content-Type": "application/x-www-form-urlencoded" },
-            body: formData.toString()
-          });
+          if (submitForm.rawFile) {
+            fileName = submitForm.rawFile.name;
+            fileType = submitForm.rawFile.type;
+            base64File = await new Promise((resolve) => {
+              const reader = new FileReader();
+              reader.onload = (evt) => resolve(evt.target.result);
+              reader.readAsDataURL(submitForm.rawFile);
+            });
+          }
 
-          const newId = `CMP-2026-${Math.floor(100 + Math.random() * 900)}`;
-          setComplaints(prev => [{
-            id: newId,
-            submitter: submitForm.displayPref === 'Anonymous' ? 'Anonymous' : `${submitForm.privateName.charAt(0) || 'U'}***`,
-            relationship: submitForm.relationship,
-            courseDate: 'Recent',
-            dateSubmitted: new Date().toISOString().split('T')[0],
+          const payload = {
             title: submitForm.title,
             summary: submitForm.summary,
             category: submitForm.category,
-            status: 'Pending'
-          }, ...prev]);
+            relationship: submitForm.relationship,
+            displayPref: submitForm.displayPref,
+            privateName: submitForm.privateName,
+            privateEmail: submitForm.privateEmail,
+            fileName: fileName,
+            fileType: fileType,
+            fileData: base64File
+          };
 
-          setSubmissionSuccess(true);
-          setToastMessage("Successfully saved Database!");
-          setTimeout(() => setToastMessage(null), 4000);
+          const res = await fetch(GOOGLE_SCRIPT_URL, {
+            method: "POST",
+            body: JSON.stringify(payload)
+          });
+
+          const result = await res.json();
+
+          if (result.status === "success") {
+            const newId = `CMP-2026-${Math.floor(100 + Math.random() * 900)}`;
+            setComplaints(prev => [{
+              id: newId,
+              submitter: submitForm.displayPref === 'Anonymous' ? 'Anonymous' : `${submitForm.privateName.charAt(0) || 'U'}***`,
+              relationship: submitForm.relationship,
+              courseDate: 'Recent',
+              dateSubmitted: new Date().toISOString().split('T')[0],
+              title: submitForm.title,
+              summary: submitForm.summary,
+              category: submitForm.category,
+              status: 'Pending'
+            }, ...prev]);
+
+            setSubmissionSuccess(true);
+            setToastMessage("Successfully saved to Google Drive!");
+            setTimeout(() => setToastMessage(null), 4000);
+          } else {
+            alert("Error: " + result.message);
+          }
         } catch (err) {
           alert("Submission error. Check network connection.");
         } finally {
@@ -228,24 +240,6 @@
                     </div>
                   </div>
                 </section>
-
-                {/* EDITORIAL TEASER */}
-                <section className="max-w-7xl mx-auto px-4">
-                  <h2 className="text-2xl font-bold text-white mb-4">What We Found: Advertised vs Reality</h2>
-                  <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="bg-emerald-950/20 border border-emerald-900/40 p-4 rounded-lg">
-                        <h4 className="font-bold text-emerald-400 text-sm mb-1">What Course Advertised</h4>
-                        <p className="text-xs text-slate-300">12+ Proprietary Algorithmic Models, 1-on-1 daily mentorship, and 30-day unconditional refunds.</p>
-                      </div>
-                      <div className="bg-red-950/20 border border-red-900/40 p-4 rounded-lg">
-                        <h4 className="font-bold text-red-400 text-sm mb-1">What Students Reported</h4>
-                        <p className="text-xs text-slate-300">Automated Telegram bot replies, recycled retail indicators, and rejected refund requests.</p>
-                      </div>
-                    </div>
-                    <button onClick={() => setActiveTab('what-we-found')} className="text-xs text-red-400 hover:underline font-semibold block pt-2">Read Full Investigation Matrix →</button>
-                  </div>
-                </section>
               </div>
             )}
 
@@ -337,12 +331,12 @@
             {activeTab === 'submit' && (
               <div className="max-w-2xl mx-auto px-4 py-12">
                 <h1 className="text-3xl font-bold text-white mb-2">Submit Your Experience</h1>
-                <p className="text-slate-400 text-sm mb-8">Submissions route directly to your private Database folder.</p>
+                <p className="text-slate-400 text-sm mb-8">Evidence files upload directly to your Google Drive folder.</p>
 
                 {submissionSuccess ? (
                   <div className="bg-slate-900 border border-emerald-500/50 p-8 rounded-xl text-center">
                     <h2 className="text-2xl font-bold text-emerald-400 mb-2">Submission Received</h2>
-                    <p className="text-slate-300 text-sm mb-6">Your data has been securely saved to Database.</p>
+                    <p className="text-slate-300 text-sm mb-6">Your data and evidence file have been saved to Google Drive.</p>
                     <button onClick={() => setSubmissionSuccess(false)} className="px-6 py-2 bg-slate-800 text-white rounded-lg text-sm">Submit Another</button>
                   </div>
                 ) : (
@@ -377,13 +371,18 @@
                       <textarea rows={4} required value={submitForm.summary} onChange={e => setSubmitForm({...submitForm, summary: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded p-2.5 text-sm text-white"></textarea>
                     </div>
 
+                    <div>
+                      <label className="block text-xs font-mono text-slate-400 mb-1">Upload Screenshot / Evidence File</label>
+                      <input type="file" onChange={e => setSubmitForm({...submitForm, rawFile: e.target.files[0]})} className="text-xs text-slate-400 block w-full" />
+                    </div>
+
                     <div className="flex items-start gap-2 pt-2">
                       <input type="checkbox" id="c" checked={submitForm.consent} onChange={e => setSubmitForm({...submitForm, consent: e.target.checked})} className="mt-1" />
                       <label htmlFor="c" className="text-xs text-slate-400">I confirm that this experience is accurate and true.</label>
                     </div>
 
                     <button type="submit" disabled={isUploading} className="w-full py-3 bg-red-600 hover:bg-red-500 text-white font-bold rounded-lg transition">
-                      {isUploading ? "Uploading to Database..." : "Submit Evidence"}
+                      {isUploading ? "Uploading to Google Drive..." : "Submit Evidence"}
                     </button>
                   </form>
                 )}
@@ -396,7 +395,7 @@
                 <h1 className="text-3xl font-bold text-white mb-6">About 10xTrader Watch</h1>
                 <div className="bg-slate-900 border border-slate-800 p-8 rounded-xl space-y-4 text-sm text-slate-300">
                   <p><strong>10xTrader Watch</strong> is an independent consumer awareness platform dedicated to bringing transparency to retail trading education courses.</p>
-                  <p>All submissions are manually reviewed by moderators, and personal credentials are kept confidential in private Database storage buckets.</p>
+                  <p>All submissions are manually reviewed by moderators, and personal credentials are kept confidential in private Google Drive storage buckets.</p>
                 </div>
               </div>
             )}
