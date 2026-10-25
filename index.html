@@ -23,31 +23,12 @@
     const { useState, useMemo } = React;
 
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxmo88hrElpBl6V3o7j0MPDuxiWYwHXvph4Rrd1nx_AbYJw2vB3hXQIT8jvaX4FwsM5/exec";
-    
-    // SECURE HASH OF THE ADMIN PASSWORD - No plain text in source code!
-    const ADMIN_PASSWORD_HASH = "8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918";
-
-    async function hashString(string) {
-      const utf8 = new TextEncoder().encode(string);
-      const hashBuffer = await crypto.subtle.digest('SHA-256', utf8);
-      const hashArray = Array.from(new Uint8Array(hashBuffer));
-      return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-    }
-
-    // Helper to mask complainant names for public privacy (e.g., "Rahul Sharma" -> "R*** S.")
-    const maskName = (name) => {
-      if (!name || name === 'Anonymous') return 'Anonymous Student';
-      const parts = name.trim().split(' ');
-      const first = parts[0];
-      const maskedFirst = first.charAt(0) + '***';
-      const last = parts.length > 1 ? ' ' + parts[parts.length - 1].charAt(0) + '.' : '';
-      return maskedFirst + last;
-    };
+    const ADMIN_PASSWORD = "10xadmin2026";
 
     const INITIAL_COMPLAINTS = [
       {
         id: 'CMP-2026-089',
-        submitter: 'Sneha Patel',
+        submitter: 'Sneha P.',
         paid: '₹35,000 paid',
         relationship: 'Student',
         dateSubmitted: '14 Oct 2024',
@@ -59,7 +40,7 @@
       },
       {
         id: 'CMP-2026-074',
-        submitter: 'Rahul Singh',
+        submitter: 'Rahul S.',
         paid: '₹30,000 paid',
         relationship: 'Student',
         dateSubmitted: '12 Oct 2024',
@@ -71,7 +52,7 @@
       },
       {
         id: 'CMP-2026-061',
-        submitter: 'Ananya Kumar',
+        submitter: 'Ananya K.',
         paid: '₹33,000 paid',
         relationship: 'Student',
         dateSubmitted: '08 Oct 2024',
@@ -83,7 +64,7 @@
       },
       {
         id: 'CMP-2026-052',
-        submitter: 'Vikram Menon',
+        submitter: 'Vikram M.',
         paid: '₹35,000 paid',
         relationship: 'Student',
         dateSubmitted: '05 Oct 2024',
@@ -137,10 +118,9 @@
         evidenceCount: evidenceItems.length + 13
       }), [complaints, evidenceItems]);
 
-      const handleAdminLogin = async (e) => {
+      const handleAdminLogin = (e) => {
         e.preventDefault();
-        const inputHash = await hashString(passwordInput);
-        if (inputHash === ADMIN_PASSWORD_HASH) {
+        if (passwordInput === ADMIN_PASSWORD) {
           setAdminAuthenticated(true);
           setPasswordInput('');
           setShowAdminModal(false);
@@ -237,10 +217,10 @@
           {/* ADMIN LOGIN MODAL */}
           {showAdminModal && (
             <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-              <div className="bg-slate-900 border border-slate-800 p-8 rounded-xl max-w-md w-full relative shadow-2xl">
+              <div className="bg-slate-900 border border-slate-800 p-8 rounded-xl max-w-md w-full relative">
                 <button onClick={() => setShowAdminModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white">✕</button>
                 <h3 className="text-xl font-bold text-white mb-2">Admin Portal Login</h3>
-                <p className="text-xs text-slate-400 mb-6">Enter secure password to review pending submissions and manage entries.</p>
+                <p className="text-xs text-slate-400 mb-6">Enter password to review pending submissions and manage entries.</p>
                 
                 {adminAuthenticated ? (
                   <div className="space-y-4">
@@ -404,47 +384,44 @@
               </div>
             </section>
 
-            {/* RECENT COMPLAINTS GRID (WITH PRIVACY NAME MASKING) */}
+            {/* RECENT COMPLAINTS GRID */}
             <section id="complaints" className="max-w-7xl mx-auto px-4 mb-20">
               <div className="flex justify-between items-end mb-8">
                 <div>
                   <div className="w-1.5 h-8 bg-red-600 rounded-full mb-3"></div>
                   <h2 className="text-2xl sm:text-3xl font-bold text-white">Recent Complaints</h2>
                 </div>
-                <span className="text-xs font-mono text-slate-400">Showing Approved Student Accounts (Names Masked for Privacy)</span>
+                <span className="text-xs font-mono text-slate-400">Showing Approved Student Accounts</span>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                {complaints.filter(c => c.status === 'Approved').map((item) => {
-                  const publicName = maskName(item.submitter);
-                  return (
-                    <div key={item.id} className="bg-slate-900 border border-slate-800 rounded-xl p-6 flex flex-col justify-between shadow-xl hover:border-slate-700 transition">
-                      <div>
-                        <div className="flex items-center gap-3 mb-4">
-                          <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-cyan-600 to-indigo-600 flex items-center justify-center font-bold text-white text-sm">
-                            {publicName.charAt(0)}
-                          </div>
-                          <div>
-                            <h4 className="font-bold text-white text-sm">{publicName}</h4>
-                            <span className="text-[11px] font-mono text-emerald-400">{item.paid}</span>
-                          </div>
+                {complaints.filter(c => c.status === 'Approved').map((item) => (
+                  <div key={item.id} className="bg-slate-900 border border-slate-800 rounded-xl p-6 flex flex-col justify-between shadow-xl hover:border-slate-700 transition">
+                    <div>
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-cyan-600 to-indigo-600 flex items-center justify-center font-bold text-white text-sm">
+                          {item.submitter.charAt(0)}
                         </div>
-
-                        <p className="text-sm text-slate-300 italic leading-relaxed mb-6">
-                          {item.title}
-                        </p>
+                        <div>
+                          <h4 className="font-bold text-white text-sm">{item.submitter}</h4>
+                          <span className="text-[11px] font-mono text-emerald-400">{item.paid}</span>
+                        </div>
                       </div>
 
-                      <div>
-                        <div className="text-[10px] text-slate-500 font-mono mb-3">{item.dateSubmitted}</div>
-                        <div className="flex flex-wrap gap-2">
-                          <span className="px-2.5 py-1 rounded bg-red-950/60 border border-red-800/40 text-red-400 text-[10px] font-semibold">{item.category}</span>
-                          {item.tag2 && <span className="px-2.5 py-1 rounded bg-slate-800 text-slate-300 text-[10px] font-semibold">{item.tag2}</span>}
-                        </div>
+                      <p className="text-sm text-slate-300 italic leading-relaxed mb-6">
+                        {item.title}
+                      </p>
+                    </div>
+
+                    <div>
+                      <div className="text-[10px] text-slate-500 font-mono mb-3">{item.dateSubmitted}</div>
+                      <div className="flex flex-wrap gap-2">
+                        <span className="px-2.5 py-1 rounded bg-red-950/60 border border-red-800/40 text-red-400 text-[10px] font-semibold">{item.category}</span>
+                        {item.tag2 && <span className="px-2.5 py-1 rounded bg-slate-800 text-slate-300 text-[10px] font-semibold">{item.tag2}</span>}
                       </div>
                     </div>
-                  );
-                })}
+                  </div>
+                ))}
               </div>
             </section>
 
@@ -482,7 +459,7 @@
                     SECURE SUBMISSION VAULT
                   </span>
                   <h2 className="text-3xl font-bold text-white mt-3">Submit Your Experience</h2>
-                  <p className="text-sm text-slate-400 mt-1">Files and details route directly to your private Google Drive folder. Names are automatically masked publicly.</p>
+                  <p className="text-sm text-slate-400 mt-1">Files and details route directly to your private Google Drive folder.</p>
                 </div>
 
                 {submissionSuccess ? (
@@ -495,8 +472,8 @@
                   <form onSubmit={handleSubmission} className="space-y-5">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-xs font-mono text-slate-400 mb-1">Your Full Name (Private / Masked Publicly) *</label>
-                        <input type="text" required value={submitForm.privateName} onChange={e => setSubmitForm({...submitForm, privateName: e.target.value})} placeholder="e.g. Rahul Verma" className="w-full bg-slate-950 border border-slate-800 rounded p-3 text-sm text-white" />
+                        <label className="block text-xs font-mono text-slate-400 mb-1">Your Name *</label>
+                        <input type="text" required value={submitForm.privateName} onChange={e => setSubmitForm({...submitForm, privateName: e.target.value})} placeholder="e.g. Rahul V." className="w-full bg-slate-950 border border-slate-800 rounded p-3 text-sm text-white" />
                       </div>
                       <div>
                         <label className="block text-xs font-mono text-slate-400 mb-1">Email (Confidential) *</label>
@@ -548,13 +525,13 @@
               </div>
             </section>
 
-            {/* ADMIN MODERATION PANEL (UNLOCKED WHEN LOGGED IN - SHOWS FULL REAL NAMES FOR MODERATION) */}
+            {/* ADMIN MODERATION PANEL (UNLOCKED WHEN LOGGED IN) */}
             {adminAuthenticated && (
               <section id="admin-panel" className="max-w-5xl mx-auto px-4 mb-24">
                 <div className="bg-slate-900 border-2 border-cyan-500/50 rounded-2xl p-8 shadow-2xl space-y-8">
                   <div className="flex justify-between items-center border-b border-slate-800 pb-4">
                     <div>
-                      <span className="px-2.5 py-1 rounded bg-cyan-950 text-cyan-400 text-xs font-mono">MODERATOR MODE (FULL DETAILS VISIBLE)</span>
+                      <span className="px-2.5 py-1 rounded bg-cyan-950 text-cyan-400 text-xs font-mono">MODERATOR MODE</span>
                       <h2 className="text-2xl font-bold text-white mt-1">Admin Management Portal</h2>
                     </div>
                     <button onClick={() => setAdminAuthenticated(false)} className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-semibold">
@@ -566,4 +543,101 @@
                   <div>
                     <h3 className="text-lg font-bold text-amber-400 mb-4">Pending Submissions Queue ({complaints.filter(c => c.status === 'Pending').length})</h3>
                     {complaints.filter(c => c.status === 'Pending').length === 0 ? (
-                      <p className="text-slate-500
+                      <p className="text-slate-500 text-sm bg-slate-950 p-4 rounded-xl">No pending submissions awaiting review.</p>
+                    ) : (
+                      <div className="space-y-4">
+                        {complaints.filter(c => c.status === 'Pending').map(item => (
+                          <div key={item.id} className="bg-slate-950 border border-slate-800 p-5 rounded-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                            <div>
+                              <span className="text-xs font-mono text-amber-400 bg-amber-950 px-2 py-0.5 rounded mr-2">{item.id}</span>
+                              <span className="text-xs text-slate-400">{item.privateEmail}</span>
+                              <h4 className="font-bold text-white text-base mt-1">{item.title}</h4>
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0">
+                              <button onClick={() => handleApprove(item.id)} className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold">Approve & Publish</button>
+                              <button onClick={() => handleDeleteComplaint(item.id)} className="px-4 py-2 bg-red-950 hover:bg-red-900 text-red-400 rounded-lg text-xs font-bold">Delete</button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Published Complaints Control */}
+                  <div>
+                    <h3 className="text-lg font-bold text-white mb-4">Manage Published Complaints ({complaints.filter(c => c.status === 'Approved').length})</h3>
+                    <div className="space-y-3">
+                      {complaints.filter(c => c.status === 'Approved').map(item => (
+                        <div key={item.id} className="bg-slate-950 border border-slate-800 p-4 rounded-xl flex justify-between items-center text-xs">
+                          <div>
+                            <span className="font-mono text-cyan-400 mr-2">{item.id}</span>
+                            <span className="font-bold text-white">{item.submitter}: {item.title}</span>
+                          </div>
+                          <button onClick={() => handleDeleteComplaint(item.id)} className="px-3 py-1.5 bg-red-950 hover:bg-red-900 text-red-400 rounded font-bold">Remove</button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Evidence Gallery Control */}
+                  <div>
+                    <h3 className="text-lg font-bold text-white mb-4">Manage Evidence Items ({evidenceItems.length})</h3>
+                    <div className="space-y-3">
+                      {evidenceItems.map(item => (
+                        <div key={item.id} className="bg-slate-950 border border-slate-800 p-4 rounded-xl flex justify-between items-center text-xs">
+                          <div>
+                            <span className="font-mono text-cyan-400 mr-2">{item.id}</span>
+                            <span className="font-bold text-white">{item.title}</span>
+                          </div>
+                          <button onClick={() => handleDeleteEvidence(item.id)} className="px-3 py-1.5 bg-red-950 hover:bg-red-900 text-red-400 rounded font-bold">Remove</button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                </div>
+              </section>
+            )}
+
+            {/* ABOUT SECTION */}
+            <section id="about" className="max-w-4xl mx-auto px-4 mb-20">
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8 sm:p-10 space-y-4 text-sm text-slate-300">
+                <h3 className="text-xl font-bold text-white">About 10xTrader Truth & Awareness</h3>
+                <p>This platform is an independent consumer research initiative[cite: 12] dedicated to providing transparency on retail trading courses. All data and proof files submitted by students are stored securely in encrypted Google Drive vaults.</p>
+                <p className="text-xs text-slate-500 font-mono">© 2026 10xTrader Truth & Awareness. All rights reserved[cite: 12]. This website is a consumer awareness platform and not affiliated with 10xTrader[cite: 12].</p>
+              </div>
+            </section>
+
+          </main>
+
+          {/* FOOTER */}
+          <footer className="bg-[#05070a] border-t border-slate-800 py-12 px-4">
+            <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6 text-xs text-slate-400">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded bg-red-600 flex items-center justify-center font-bold text-white">10x</div>
+                <span className="font-bold text-white">10xTrader Truth & Awareness</span>
+              </div>
+              
+              <div className="flex flex-wrap gap-6 font-medium">
+                <a href="#hero" className="hover:text-white transition">Home</a>
+                <a href="#analysis" className="hover:text-white transition">What We Found</a>
+                <a href="#claims" className="hover:text-white transition">Course Claims</a>
+                <a href="#evidence" className="hover:text-white transition">Evidence</a>
+                <a href="#complaints" className="hover:text-white transition">Complaints</a>
+                <a href="#submit" className="hover:text-white transition">Submit Evidence</a>
+                <a href="#about" className="hover:text-white transition">About</a>
+              </div>
+
+              <div className="text-slate-500 text-[11px]">
+                This website is a consumer awareness platform and not affiliated with 10xTrader[cite: 12].
+              </div>
+            </div>
+          </footer>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
