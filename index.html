@@ -1,0 +1,1620 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>10xTrader Watch — Consumer Awareness Platform</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- React & ReactDOM -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  
+  <!-- Babel Compiler for JSX -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="bg-[#07090e] text-slate-200">
+  
+  <div id="root"></div>
+
+  <!-- React Code Block -->
+  <script type="text/babel">
+    // Paste the React application code provided in the canvas here
+
+import React, { useState, useMemo, useEffect } from 'react';
+import { 
+  Shield, AlertTriangle, CheckCircle, Search, FileText, Upload, 
+  Lock, Eye, Filter, ArrowRight, X, ChevronRight, HardDrive, 
+  ExternalLink, UserCheck, Scale, AlertCircle, RefreshCw, MessageSquare, 
+  Clock, Tag, Building, Info, FileCheck, Layers, Users, Key, Database, ChevronDown, Check, Sparkles, Menu
+} from 'lucide-react';
+
+// --- INITIAL DEMO / DEFAULT STATE DATA ---
+const INITIAL_COMPLAINTS = [
+  {
+    id: 'CMP-2026-089',
+    submitter: 'M*** K.',
+    relationship: 'Student',
+    courseDate: 'March 2026',
+    dateSubmitted: '2026-04-12',
+    title: 'Promised 1-on-1 Mentorship Was Automated Bot Messages',
+    summary: 'The VIP enrollment package ($4,999) explicitly advertised daily personalized live coaching and trade reviews by the master trader. In reality, all direct support was handled by an unmonitored automated Telegram bot sending recycled chart signals from 2023.',
+    category: 'Misleading Claims',
+    status: 'Approved',
+    evidenceCount: 3,
+    evidenceRefs: ['EV-102', 'EV-105'],
+    providerResponseId: 'RESP-001',
+    verifiedPurchase: true,
+    privateEmail: 'masked_user_89@domain.com',
+    privateName: 'Marcus Vance'
+  },
+  {
+    id: 'CMP-2026-074',
+    submitter: 'Anonymous',
+    relationship: 'Student',
+    courseDate: 'January 2026',
+    dateSubmitted: '2026-03-28',
+    title: 'Refund Policy Denied After 48 Hours Despite 30-Day Guarantee',
+    summary: 'The promotional page offered a "No-Questions-Asked 30-Day Refund Policy". When requested on day 5 due to missing module materials, support claimed that viewing >10% of video content rendered the account non-refundable according to hidden terms.',
+    category: 'Refund Policy',
+    status: 'Approved',
+    evidenceCount: 2,
+    evidenceRefs: ['EV-101'],
+    providerResponseId: null,
+    verifiedPurchase: true,
+    privateEmail: 'anon_trader_74@private.net',
+    privateName: 'Sarah Jenkins'
+  },
+  {
+    id: 'CMP-2026-061',
+    submitter: 'D*** P.',
+    relationship: 'Student',
+    courseDate: 'November 2025',
+    dateSubmitted: '2026-02-15',
+    title: 'Live Trading Room Consisted of Pre-Recorded Video Loops',
+    summary: 'Subscribers paying $299/month for access to the live session room noticed that the trades presented in real-time matched historical recordings frame-for-frame during dynamic market news releases.',
+    category: 'Course Content',
+    status: 'Approved',
+    evidenceCount: 4,
+    evidenceRefs: ['EV-103', 'EV-104'],
+    providerResponseId: null,
+    verifiedPurchase: true,
+    privateEmail: 'd.p_trader@mail.org',
+    privateName: 'David Park'
+  },
+  {
+    id: 'CMP-2026-104',
+    submitter: 'Pending Reviewer',
+    relationship: 'Student',
+    courseDate: 'April 2026',
+    dateSubmitted: '2026-04-20',
+    title: 'Syllabus Lacks Promised Institutional Order Flow Strategies',
+    summary: 'Modules 4 through 8 were supposed to cover proprietary order-flow algorithms. Instead, the video content recycled standard retail indicators available free on TradingView.',
+    category: 'Course Content',
+    status: 'Pending',
+    evidenceCount: 1,
+    evidenceRefs: [],
+    providerResponseId: null,
+    verifiedPurchase: false,
+    privateEmail: 'alex.r@web.io',
+    privateName: 'Alex Rodriguez'
+  }
+];
+
+const INITIAL_EVIDENCE = [
+  {
+    id: 'EV-101',
+    title: 'Refund Policy Sales Page Screenshot',
+    category: 'Course Advertisements',
+    date: '2026-03-29',
+    description: 'High-resolution archive of promotional landing page displaying bold "30-Day Risk-Free Guarantee" text without restrictive disclaimers.',
+    redactedUrl: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=800&q=80',
+    status: 'Verified',
+    gdriveId: '1A2b3C4d5E6f7G8h9I_EV101',
+    redactionNotes: 'PII removed: Customer IP, specific session checkout tokens.'
+  },
+  {
+    id: 'EV-102',
+    title: 'Telegram Support Log Transcript',
+    category: 'Chat Excerpts',
+    date: '2026-04-10',
+    description: 'Exported chat history demonstrating automated macro replies to complex mentorship questions regarding risk management.',
+    redactedUrl: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=800&q=80',
+    status: 'Verified',
+    gdriveId: '1X9y8Z7w6V5u4T3s2R_EV102',
+    redactionNotes: 'PII removed: Personal handles, phone numbers, private Telegram IDs.'
+  },
+  {
+    id: 'EV-103',
+    title: 'Live Stream Frame Timestamp Comparison',
+    category: 'Course Content',
+    date: '2026-02-16',
+    description: 'Side-by-side comparison matrix showing identical price action overlays recorded across separate live webinar streams.',
+    redactedUrl: 'https://images.unsplash.com/photo-1642543492481-44e81e3914a7?auto=format&fit=crop&w=800&q=80',
+    status: 'Verified',
+    gdriveId: '1M2N3O4P5Q6R7S8T9U_EV103',
+    redactionNotes: 'PII removed: Student viewer list and chat panel user handles.'
+  },
+  {
+    id: 'EV-104',
+    title: 'Credit Card Payment Confirmation Receipt',
+    category: 'Payment Documentation',
+    date: '2025-11-04',
+    description: 'Bank invoice verifying $4,999 payment made to 10xTrader Merchant account.',
+    redactedUrl: 'https://images.unsplash.com/photo-1559526324-4b87b5e36e44?auto=format&fit=crop&w=800&q=80',
+    status: 'Verified',
+    gdriveId: '1L8K7J6I5H4G3F2E1D_EV104',
+    redactionNotes: 'PII removed: Credit card full numbers, home billing address, authorization codes.'
+  }
+];
+
+const INITIAL_RESPONSES = [
+  {
+    id: 'RESP-001',
+    relatedComplaintId: 'CMP-2026-089',
+    date: '2026-04-15',
+    author: '10xTrader Official Operations Team',
+    status: 'Verified Authentic',
+    text: 'Regarding CMP-2026-089: We acknowledge that during our high-volume enrollment week in March 2026, our VIP live mentor queue experienced technical latency. Telegram automated routing was deployed temporarily. We have contacted affected users to issue proportional 25% partial refunds and scheduled individual catch-up sessions.',
+    sourceUrl: 'Official Provider Response Portal'
+  }
+];
+
+const COMPARISON_MATRIX = [
+  {
+    topic: 'Breadth of Trading Strategies',
+    advertised: '12+ Proprietary Algorithmic & Institutional Order Flow Models',
+    reported: 'Basic Moving Average Crossovers & standard RSI/MACD retail setups readily available free online.',
+    verifiedStatus: 'Discrepancy Documented'
+  },
+  {
+    topic: 'Live Sessions & Practical Demo',
+    advertised: 'Daily 2-Hour Live Market Execution & Real-Money Portfolio Management',
+    reported: 'Pre-recorded video loops played as live streams; minimal real-time trade executions.',
+    verifiedStatus: 'Under Active Review'
+  },
+  {
+    topic: 'Course Materials & Syllabus',
+    advertised: 'Over 100 Hours of High-Definition Video Curriculum & Custom Software Tools',
+    reported: 'Approx. 18 hours of basic introductory video lectures; custom software is a renamed open-source script.',
+    verifiedStatus: 'Discrepancy Documented'
+  },
+  {
+    topic: 'Beginner & 1-on-1 Support',
+    advertised: 'Dedicated Direct Mentor Access via Priority Chat & Private 1-on-1 Calls',
+    reported: 'Replies provided by automated bots or offshore customer service reps with non-technical responses.',
+    verifiedStatus: 'Discrepancy Documented'
+  },
+  {
+    topic: 'Follow-up Assistance & Guarantee',
+    advertised: '30-Day Unconditional 100% Money-Back Guarantee',
+    reported: 'Refund requests restricted by undisclosed hidden terms (e.g., viewing >10% invalidates refund).',
+    verifiedStatus: 'Discrepancy Documented'
+  }
+];
+
+export default function App() {
+  // --- APPLICATION STATE ---
+  const [isAdminMode, setIsAdminMode] = useState(false);
+  const [activeTab, setActiveTab] = useState('home');
+  const [complaints, setComplaints] = useState(INITIAL_COMPLAINTS);
+  const [evidenceItems, setEvidenceItems] = useState(INITIAL_EVIDENCE);
+  const [responses, setResponses] = useState(INITIAL_RESPONSES);
+  const [auditLog, setAuditLog] = useState([
+    { id: 'LOG-1', time: '2026-04-22 10:14 IST', action: 'Approved Complaint CMP-2026-089', admin: 'Moderator_Alpha' },
+    { id: 'LOG-2', time: '2026-04-20 14:30 IST', action: 'Uploaded Evidence EV-104 to Google Drive', admin: 'System_Bot' }
+  ]);
+
+  // Filters & Search
+  const [searchQuery, setSearchQuery] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('All');
+  const [selectedComplaintModal, setSelectedComplaintModal] = useState(null);
+  const [selectedEvidenceModal, setSelectedEvidenceModal] = useState(null);
+  const [showSearchModal, setShowSearchModal] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [legalModalContent, setLegalModalContent] = useState(null); // 'terms' | 'privacy' | 'handling' | null
+
+  // Toast System
+  const [toastMessage, setToastMessage] = useState(null);
+  const triggerToast = (msg) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 4000);
+  };
+
+  // Submit Form State
+  const [submitForm, setSubmitForm] = useState({
+    relationship: 'Student',
+    displayPref: 'Masked name',
+    privateName: '',
+    privateEmail: '',
+    courseDate: '',
+    title: '',
+    summary: '',
+    category: 'Course Content',
+    fileAttached: null,
+    refLinks: '',
+    consent: false
+  });
+  const [submissionSuccess, setSubmissionSuccess] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+
+  // Computed Key Stats
+  const stats = useMemo(() => {
+    const totalSubmitted = complaints.length;
+    const reviewed = complaints.filter(c => c.status === 'Approved' || c.status === 'Rejected').length;
+    const evidenceCount = evidenceItems.length;
+    const complaintsCount = complaints.filter(c => c.status === 'Approved').length;
+    const providerResponsesCount = responses.length;
+    return { totalSubmitted, reviewed, evidenceCount, complaintsCount, providerResponsesCount };
+  }, [complaints, evidenceItems, responses]);
+
+  // Filtered Complaints for Public View
+  const filteredComplaints = useMemo(() => {
+    return complaints.filter(c => {
+      // Public only sees approved unless in Admin view
+      if (!isAdminMode && c.status !== 'Approved') return false;
+      const matchesSearch = c.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                            c.summary.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                            c.id.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesCat = categoryFilter === 'All' || c.category === categoryFilter;
+      return matchesSearch && matchesCat;
+    });
+  }, [complaints, searchQuery, categoryFilter, isAdminMode]);
+
+  // Filtered Evidence Items
+  const filteredEvidence = useMemo(() => {
+    return evidenceItems.filter(e => {
+      const matchesSearch = e.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                            e.description.toLowerCase().includes(searchQuery.toLowerCase());
+      return matchesSearch;
+    });
+  }, [evidenceItems, searchQuery]);
+
+  // Submission Form Handler
+  const handleSubmission = (e) => {
+    e.preventDefault();
+    if (!submitForm.consent) {
+      alert("Please confirm the authorization and truthfulness disclosure.");
+      return;
+    }
+
+    setIsUploading(true);
+    // Simulate streaming file upload directly to Google Drive API
+    setTimeout(() => {
+      const newId = `CMP-2026-${Math.floor(100 + Math.random() * 900)}`;
+      const newRecord = {
+        id: newId,
+        submitter: submitForm.displayPref === 'Anonymous' ? 'Anonymous' : `${submitForm.privateName.charAt(0) || 'U'}***`,
+        relationship: submitForm.relationship,
+        courseDate: submitForm.courseDate || 'Recent',
+        dateSubmitted: new Date().toISOString().split('T')[0],
+        title: submitForm.title,
+        summary: submitForm.summary,
+        category: submitForm.category,
+        status: 'Pending',
+        evidenceCount: submitForm.fileAttached ? 1 : 0,
+        evidenceRefs: [],
+        providerResponseId: null,
+        verifiedPurchase: false,
+        privateEmail: submitForm.privateEmail,
+        privateName: submitForm.privateName
+      };
+
+      setComplaints(prev => [newRecord, ...prev]);
+      setIsUploading(false);
+      setSubmissionSuccess(true);
+      triggerToast("Submission successfully stored in private queue & Google Drive storage bucket!");
+      
+      // Reset Form
+      setSubmitForm({
+        relationship: 'Student',
+        displayPref: 'Masked name',
+        privateName: '',
+        privateEmail: '',
+        courseDate: '',
+        title: '',
+        summary: '',
+        category: 'Course Content',
+        fileAttached: null,
+        refLinks: '',
+        consent: false
+      });
+    }, 1500);
+  };
+
+  // Admin Actions
+  const handleApproveComplaint = (id) => {
+    setComplaints(prev => prev.map(c => c.id === id ? { ...c, status: 'Approved' } : c));
+    setAuditLog(prev => [{ id: `LOG-${Date.now()}`, time: new Date().toLocaleString(), action: `Approved submission ${id}`, admin: 'Admin_Super' }, ...prev]);
+    triggerToast(`Record ${id} published to public directory.`);
+  };
+
+  const handleRejectComplaint = (id) => {
+    setComplaints(prev => prev.map(c => c.id === id ? { ...c, status: 'Rejected' } : c));
+    setAuditLog(prev => [{ id: `LOG-${Date.now()}`, time: new Date().toLocaleString(), action: `Rejected submission ${id}`, admin: 'Admin_Super' }, ...prev]);
+    triggerToast(`Record ${id} marked as rejected.`);
+  };
+
+  return (
+    <div className="min-h-screen bg-[#07090e] text-slate-200 font-sans selection:bg-red-600 selection:text-white flex flex-col relative overflow-x-hidden">
+      
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div className="fixed bottom-6 right-6 z-50 bg-slate-900 border border-emerald-500/50 text-emerald-400 px-5 py-3 rounded-lg shadow-2xl flex items-center gap-3 animate-bounce">
+          <CheckCircle className="w-5 h-5 text-emerald-400 shrink-0" />
+          <span className="text-sm font-medium">{toastMessage}</span>
+        </div>
+      )}
+
+      {/* --- HEADER NAVBAR --- */}
+      <header className="sticky top-0 z-40 bg-[#0a0d14]/90 backdrop-blur-md border-b border-slate-800/80">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+          
+          {/* Logo */}
+          <div className="flex items-center gap-3 cursor-pointer" onClick={() => setActiveTab('home')}>
+            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-red-600 to-red-900 flex items-center justify-center shadow-lg shadow-red-950/50 border border-red-500/30">
+              <Shield className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-xl font-extrabold tracking-tight text-white uppercase font-mono">10xTrader<span className="text-red-500">Watch</span></span>
+                <span className="text-[10px] uppercase tracking-wider font-mono bg-red-950/80 text-red-400 border border-red-800/50 px-1.5 py-0.5 rounded">Investigative</span>
+              </div>
+              <p className="text-xs text-slate-400 font-medium">Real traders. Real stories.</p>
+            </div>
+          </div>
+
+          {/* Desktop Navigation */}
+          <nav className="hidden lg:flex items-center gap-1 xl:gap-2 text-sm font-medium">
+            {[
+              { id: 'home', label: 'Home' },
+              { id: 'what-we-found', label: 'What We Found' },
+              { id: 'complaints', label: 'Complaints' },
+              { id: 'evidence', label: 'Evidence Gallery' },
+              { id: 'responses', label: 'Provider Responses' },
+              { id: 'submit', label: 'Submit Evidence' },
+              { id: 'gdrive', label: 'Storage Setup' },
+              { id: 'about', label: 'About' }
+            ].map(item => (
+              <button
+                key={item.id}
+                onClick={() => { setActiveTab(item.id); setSubmissionSuccess(false); }}
+                className={`px-3 py-2 rounded-md transition-all duration-200 ${
+                  activeTab === item.id 
+                    ? 'text-white bg-slate-800/80 border border-slate-700/60 shadow-sm' 
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
+                }`}
+              >
+                {item.label}
+              </button>
+            ))}
+          </nav>
+
+          {/* Header Action Controls */}
+          <div className="flex items-center gap-3">
+            
+            {/* Search Trigger */}
+            <button 
+              onClick={() => setShowSearchModal(true)}
+              className="p-2 text-slate-400 hover:text-white rounded-lg bg-slate-900 border border-slate-800 hover:border-slate-700 transition"
+              title="Search Database"
+            >
+              <Search className="w-4 h-4" />
+            </button>
+
+            {/* Admin / Public Switcher Toggle */}
+            <div className="flex items-center bg-slate-900/90 border border-slate-800 rounded-lg p-1 text-xs">
+              <button
+                onClick={() => { setIsAdminMode(false); triggerToast("Switched to Public View"); }}
+                className={`px-2.5 py-1 rounded font-medium transition ${!isAdminMode ? 'bg-red-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'}`}
+              >
+                Public
+              </button>
+              <button
+                onClick={() => { setIsAdminMode(true); setActiveTab('admin'); triggerToast("Admin Moderation Workspace Active"); }}
+                className={`px-2.5 py-1 rounded font-medium transition flex items-center gap-1 ${isAdminMode ? 'bg-cyan-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'}`}
+              >
+                <Lock className="w-3 h-3" /> Admin
+              </button>
+            </div>
+
+            {/* Mobile Menu Icon */}
+            <button 
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="lg:hidden p-2 text-slate-400 hover:text-white rounded-lg bg-slate-900 border border-slate-800"
+            >
+              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
+          </div>
+        </div>
+
+        {/* Mobile Navigation Drawer */}
+        {mobileMenuOpen && (
+          <div className="lg:hidden bg-[#0c0f17] border-b border-slate-800 px-4 pt-2 pb-6 space-y-2">
+            {[
+              { id: 'home', label: 'Home' },
+              { id: 'what-we-found', label: 'What We Found' },
+              { id: 'complaints', label: 'Complaints' },
+              { id: 'evidence', label: 'Evidence Gallery' },
+              { id: 'responses', label: 'Provider Responses' },
+              { id: 'submit', label: 'Submit Evidence' },
+              { id: 'gdrive', label: 'Drive Storage Setup' },
+              { id: 'about', label: 'About' }
+            ].map(item => (
+              <button
+                key={item.id}
+                onClick={() => { setActiveTab(item.id); setMobileMenuOpen(false); }}
+                className={`w-full text-left px-4 py-2.5 rounded-lg text-sm font-medium ${
+                  activeTab === item.id ? 'bg-red-950/60 text-red-400 border border-red-800/40' : 'text-slate-300 hover:bg-slate-800/50'
+                }`}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+        )}
+      </header>
+
+      {/* --- MAIN CONTENT SWITCHER --- */}
+      <main className="flex-1">
+
+        {/* ADMIN MODE BANNER NOTICE */}
+        {isAdminMode && (
+          <div className="bg-cyan-950/60 border-b border-cyan-800/50 px-4 py-2 text-center text-xs text-cyan-300 flex items-center justify-center gap-2">
+            <Lock className="w-3.5 h-3.5 text-cyan-400" />
+            <span><strong>Moderator Mode Enabled:</strong> You can view private submitter credentials, unverified drafts, and direct Google Drive file handles.</span>
+            <button 
+              onClick={() => setActiveTab('admin')}
+              className="underline font-semibold ml-2 hover:text-white"
+            >
+              Open Admin Portal
+            </button>
+          </div>
+        )}
+
+        {/* ================= HOME PAGE ================= */}
+        {activeTab === 'home' && (
+          <div>
+            {/* DRAMATIC HERO SECTION */}
+            <section className="relative pt-16 pb-24 px-4 sm:px-6 lg:px-8 border-b border-slate-800/80 bg-gradient-to-b from-[#0e121d] via-[#090b12] to-[#07090e] overflow-hidden">
+              
+              {/* Candlestick & Grid Overlay Background Effect */}
+              <div className="absolute inset-0 opacity-10 pointer-events-none bg-[radial-gradient(#334155_1px,transparent_1px)] [background-size:24px_24px]"></div>
+              
+              {/* Chart Candlesticks Aesthetic Graphic Mock */}
+              <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1/2 h-full opacity-20 pointer-events-none hidden lg:flex items-end justify-end gap-3 pr-12 pb-12">
+                <div className="w-3 bg-red-600 h-32 rounded-sm relative"><div className="absolute -top-6 left-1/2 -translate-x-1/2 w-0.5 h-44 bg-red-500"></div></div>
+                <div className="w-3 bg-emerald-500 h-48 rounded-sm relative"><div className="absolute -top-10 left-1/2 -translate-x-1/2 w-0.5 h-64 bg-emerald-400"></div></div>
+                <div className="w-3 bg-red-600 h-64 rounded-sm relative"><div className="absolute -top-8 left-1/2 -translate-x-1/2 w-0.5 h-80 bg-red-500"></div></div>
+                <div className="w-3 bg-red-700 h-80 rounded-sm relative"><div className="absolute -top-4 left-1/2 -translate-x-1/2 w-0.5 h-96 bg-red-600"></div></div>
+                <div className="w-3 bg-emerald-500 h-52 rounded-sm relative"><div className="absolute -top-12 left-1/2 -translate-x-1/2 w-0.5 h-72 bg-emerald-400"></div></div>
+              </div>
+
+              <div className="max-w-7xl mx-auto relative z-10">
+                <div className="max-w-3xl">
+                  
+                  {/* Badge */}
+                  <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-red-950/60 border border-red-800/50 text-red-400 text-xs font-mono font-semibold mb-6 shadow-sm">
+                    <AlertTriangle className="w-3.5 h-3.5 text-red-500" />
+                    <span>Independent Consumer-Awareness Platform</span>
+                  </div>
+
+                  <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-white tracking-tight leading-tight">
+                    The Truth Behind <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-500 via-red-400 to-amber-500">10xTrader</span>
+                  </h1>
+
+                  <p className="mt-4 text-xl sm:text-2xl text-slate-300 font-semibold">
+                    Big promises. High fees. Make informed decisions.
+                  </p>
+
+                  <p className="mt-4 text-base sm:text-lg text-slate-400 leading-relaxed">
+                    Explore verified student experiences, archived course materials, and objective documentation to help prospective traders ask critical questions before investing thousands in trading courses.
+                  </p>
+
+                  {/* Hero CTA Buttons */}
+                  <div className="mt-8 flex flex-wrap gap-4">
+                    <button 
+                      onClick={() => setActiveTab('evidence')}
+                      className="px-6 py-3.5 rounded-lg bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white font-semibold text-base shadow-lg shadow-red-900/40 border border-red-500/40 flex items-center gap-2 transition duration-150 transform active:scale-95"
+                    >
+                      <Eye className="w-5 h-5" /> Explore the Evidence
+                    </button>
+                    <button 
+                      onClick={() => setActiveTab('submit')}
+                      className="px-6 py-3.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-200 font-semibold text-base border border-slate-700/80 flex items-center gap-2 transition duration-150"
+                    >
+                      <Upload className="w-5 h-5 text-slate-400" /> Submit Your Experience
+                    </button>
+                  </div>
+
+                  {/* Independent Disclaimer */}
+                  <div className="mt-8 pt-6 border-t border-slate-800/60 flex items-start gap-3 text-xs text-slate-500">
+                    <Info className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
+                    <span><strong>Legal Disclaimer:</strong> 10xTrader Watch is a non-commercial consumer research project. This website is NOT affiliated with, authorized, endorsed by, or in any way officially connected with 10xTrader or its parent entities. All trademarks belong to their respective owners.</span>
+                  </div>
+
+                </div>
+              </div>
+            </section>
+
+            {/* KEY INFORMATION STRIP (DYNAMIC METRIC STATS) */}
+            <section className="bg-[#090c13] border-b border-slate-800/80 py-10 px-4 sm:px-6 lg:px-8">
+              <div className="max-w-7xl mx-auto">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                  
+                  <div className="bg-slate-900/80 border border-slate-800 p-5 rounded-xl">
+                    <div className="text-slate-400 text-xs font-mono uppercase tracking-wider mb-1">Submitted Accounts</div>
+                    <div className="text-3xl font-extrabold text-white font-mono">{stats.totalSubmitted}</div>
+                    <div className="text-[11px] text-slate-500 mt-2 flex items-center gap-1">
+                      <Clock className="w-3 h-3" /> Live user submissions
+                    </div>
+                  </div>
+
+                  <div className="bg-slate-900/80 border border-slate-800 p-5 rounded-xl">
+                    <div className="text-slate-400 text-xs font-mono uppercase tracking-wider mb-1">Reviewed Entries</div>
+                    <div className="text-3xl font-extrabold text-cyan-400 font-mono">{stats.reviewed}</div>
+                    <div className="text-[11px] text-slate-500 mt-2 flex items-center gap-1">
+                      <FileCheck className="w-3 h-3 text-cyan-500" /> Fact-checked by mods
+                    </div>
+                  </div>
+
+                  <div className="bg-slate-900/80 border border-slate-800 p-5 rounded-xl">
+                    <div className="text-slate-400 text-xs font-mono uppercase tracking-wider mb-1">Evidence Published</div>
+                    <div className="text-3xl font-extrabold text-emerald-400 font-mono">{stats.evidenceCount}</div>
+                    <div className="text-[11px] text-slate-500 mt-2 flex items-center gap-1">
+                      <Lock className="w-3 h-3 text-emerald-500" /> Redacted & verified
+                    </div>
+                  </div>
+
+                  <div className="bg-slate-900/80 border border-slate-800 p-5 rounded-xl">
+                    <div className="text-slate-400 text-xs font-mono uppercase tracking-wider mb-1">Public Complaints</div>
+                    <div className="text-3xl font-extrabold text-red-400 font-mono">{stats.complaintsCount}</div>
+                    <div className="text-[11px] text-slate-500 mt-2 flex items-center gap-1">
+                      <AlertCircle className="w-3 h-3 text-red-500" /> Approved for release
+                    </div>
+                  </div>
+
+                  <div className="bg-slate-900/80 border border-slate-800 p-5 rounded-xl col-span-2 md:col-span-1">
+                    <div className="text-slate-400 text-xs font-mono uppercase tracking-wider mb-1">Provider Responses</div>
+                    <div className="text-3xl font-extrabold text-amber-400 font-mono">{stats.providerResponsesCount}</div>
+                    <div className="text-[11px] text-slate-500 mt-2 flex items-center gap-1">
+                      <Scale className="w-3 h-3 text-amber-500" /> Right-of-reply logged
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+            </section>
+
+            {/* WHAT WE FOUND PREVIEW */}
+            <section className="py-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto border-b border-slate-800/80">
+              <div className="flex flex-col md:flex-row md:items-end justify-between mb-10">
+                <div>
+                  <h2 className="text-2xl sm:text-3xl font-extrabold text-white">Editorial Investigation Summary</h2>
+                  <p className="text-slate-400 text-sm mt-1">Cross-referencing marketing promises with documented student outcomes</p>
+                </div>
+                <button 
+                  onClick={() => setActiveTab('what-we-found')}
+                  className="mt-4 md:mt-0 text-red-400 hover:text-red-300 font-medium text-sm flex items-center gap-1 transition"
+                >
+                  Read Full Editorial Matrix <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Matrix Teaser Table */}
+              <div className="bg-slate-900/60 border border-slate-800 rounded-xl overflow-hidden shadow-xl">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-sm text-slate-300">
+                    <thead className="bg-slate-950 text-slate-400 font-mono text-xs uppercase tracking-wider border-b border-slate-800">
+                      <tr>
+                        <th className="p-4">Topic Area</th>
+                        <th className="p-4 text-emerald-400">What Course Advertised</th>
+                        <th className="p-4 text-red-400">What Students Reported Receiving</th>
+                        <th className="p-4">Verification Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-800/80">
+                      {COMPARISON_MATRIX.slice(0, 3).map((item, idx) => (
+                        <tr key={idx} className="hover:bg-slate-800/30 transition">
+                          <td className="p-4 font-semibold text-white">{item.topic}</td>
+                          <td className="p-4 text-slate-300 bg-emerald-950/10">{item.advertised}</td>
+                          <td className="p-4 text-slate-300 bg-red-950/10">{item.reported}</td>
+                          <td className="p-4">
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 text-xs border border-slate-700">
+                              <AlertCircle className="w-3 h-3 text-amber-400" />
+                              {item.verifiedStatus}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </section>
+
+            {/* RECENT COMPLAINTS GRID PREVIEW */}
+            <section className="py-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8">
+                <div>
+                  <h2 className="text-2xl sm:text-3xl font-extrabold text-white">Submitted Student Experiences</h2>
+                  <p className="text-slate-400 text-sm mt-1">Reviewed accounts submitted by verified course participants</p>
+                </div>
+                <button 
+                  onClick={() => setActiveTab('complaints')}
+                  className="mt-4 sm:mt-0 px-4 py-2 bg-slate-900 border border-slate-700 text-slate-200 hover:text-white rounded-lg text-sm font-medium transition flex items-center gap-2"
+                >
+                  View All Complaints ({filteredComplaints.length}) <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Complaints Grid Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {filteredComplaints.slice(0, 4).map(complaint => (
+                  <div key={complaint.id} className="bg-slate-900/80 border border-slate-800 hover:border-slate-700 rounded-xl p-6 transition flex flex-col justify-between shadow-lg">
+                    <div>
+                      <div className="flex items-center justify-between gap-2 mb-3">
+                        <span className="text-xs font-mono bg-slate-800 text-slate-300 px-2.5 py-1 rounded border border-slate-700/60">
+                          {complaint.id}
+                        </span>
+                        <span className="text-xs font-mono text-slate-400 flex items-center gap-1">
+                          <Clock className="w-3 h-3 text-slate-500" /> {complaint.dateSubmitted}
+                        </span>
+                      </div>
+
+                      <h3 className="text-lg font-bold text-white mb-2 line-clamp-2">{complaint.title}</h3>
+                      <p className="text-slate-300 text-sm leading-relaxed mb-4 line-clamp-3">{complaint.summary}</p>
+                    </div>
+
+                    <div className="pt-4 border-t border-slate-800/80 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="px-2.5 py-0.5 rounded text-xs font-medium bg-red-950/80 text-red-400 border border-red-800/40">
+                          {complaint.category}
+                        </span>
+                        <span className="text-xs text-slate-400">By: <strong>{complaint.submitter}</strong></span>
+                      </div>
+
+                      <button 
+                        onClick={() => setSelectedComplaintModal(complaint)}
+                        className="text-xs font-semibold text-cyan-400 hover:text-cyan-300 flex items-center gap-1"
+                      >
+                        Read Experience <ChevronRight className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          </div>
+        )}
+
+        {/* ================= WHAT WE FOUND PAGE ================= */}
+        {activeTab === 'what-we-found' && (
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <div className="mb-10">
+              <span className="text-xs font-mono uppercase tracking-wider text-red-500 font-bold">Investigation Report</span>
+              <h1 className="text-3xl sm:text-4xl font-extrabold text-white mt-1">What We Found: Advertised vs. Reality</h1>
+              <p className="text-slate-400 mt-2 max-w-3xl">
+                A structured comparison evaluating official promotional claims against aggregated student documentation, bank records, and chat transcripts submitted to 10xTrader Watch.
+              </p>
+            </div>
+
+            {/* Comprehensive Matrix Table */}
+            <div className="bg-slate-900/80 border border-slate-800 rounded-xl overflow-hidden shadow-2xl mb-12">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm text-slate-300">
+                  <thead className="bg-slate-950 text-slate-400 font-mono text-xs uppercase tracking-wider border-b border-slate-800">
+                    <tr>
+                      <th className="p-5 w-1/5">Category</th>
+                      <th className="p-5 w-2/5 text-emerald-400">Promotional Claim (Advertised)</th>
+                      <th className="p-5 w-2/5 text-red-400">Student Reports & Findings</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800">
+                    {COMPARISON_MATRIX.map((item, idx) => (
+                      <tr key={idx} className="hover:bg-slate-800/30 transition">
+                        <td className="p-5 font-bold text-white align-top">
+                          {item.topic}
+                          <div className="mt-2">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-mono bg-slate-800 text-amber-400 border border-amber-900/50">
+                              {item.verifiedStatus}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="p-5 text-slate-200 bg-emerald-950/10 leading-relaxed align-top">
+                          <p className="font-medium">{item.advertised}</p>
+                          <span className="text-xs text-slate-500 mt-2 block">Source: Public Webinars & Sales Landing Page</span>
+                        </td>
+                        <td className="p-5 text-slate-200 bg-red-950/10 leading-relaxed align-top">
+                          <p className="font-medium">{item.reported}</p>
+                          <span className="text-xs text-slate-500 mt-2 block">Source: Verified Student Submissions ({stats.complaintsCount} records)</span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Legal Notice */}
+            <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-6 flex items-start gap-4">
+              <Shield className="w-6 h-6 text-red-500 shrink-0 mt-1" />
+              <div className="text-xs text-slate-400 leading-relaxed">
+                <p className="font-bold text-slate-300 text-sm mb-1">Standard of Proof & Transparency Statement</p>
+                10xTrader Watch maintains a neutral, investigative position. All entries in the table above represent documented submissions and public sales materials analyzed by moderation software. We do not allege unlawful fraud; rather, we present verified consumer discrepancies so prospective buyers can perform due diligence.
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ================= COMPLAINTS PAGE ================= */}
+        {activeTab === 'complaints' && (
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+              <div>
+                <h1 className="text-3xl font-extrabold text-white">Student Complaints Directory</h1>
+                <p className="text-slate-400 text-sm mt-1">Browse, filter, and review submitted user experiences</p>
+              </div>
+
+              {/* Submit CTA */}
+              <button 
+                onClick={() => setActiveTab('submit')}
+                className="px-4 py-2.5 bg-red-600 hover:bg-red-500 text-white text-sm font-semibold rounded-lg shadow flex items-center gap-2 self-start"
+              >
+                <Upload className="w-4 h-4" /> Submit Complaint
+              </button>
+            </div>
+
+            {/* Search & Category Filter Controls */}
+            <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-4 mb-8 space-y-4">
+              <div className="flex flex-col sm:flex-row gap-4">
+                
+                {/* Search Bar */}
+                <div className="relative flex-1">
+                  <Search className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input 
+                    type="text" 
+                    placeholder="Search by keywords, ID, or title..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg pl-9 pr-4 py-2 text-sm text-white focus:outline-none focus:border-red-500"
+                  />
+                  {searchQuery && (
+                    <button onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white">
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+
+                {/* Category Chips */}
+                <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
+                  {['All', 'Misleading Claims', 'Course Content', 'Refund Policy', 'Support'].map(cat => (
+                    <button
+                      key={cat}
+                      onClick={() => setCategoryFilter(cat)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition ${
+                        categoryFilter === cat 
+                          ? 'bg-red-600 text-white' 
+                          : 'bg-slate-800/80 text-slate-400 hover:text-white hover:bg-slate-800'
+                      }`}
+                    >
+                      {cat}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Complaints Cards Grid */}
+            {filteredComplaints.length === 0 ? (
+              <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-12 text-center my-8">
+                <AlertCircle className="w-12 h-12 text-slate-600 mx-auto mb-3" />
+                <h3 className="text-lg font-bold text-slate-300">No Complaints Match Your Criteria</h3>
+                <p className="text-slate-500 text-sm mt-1">Try clearing your search query or selecting a different category filter.</p>
+                <button 
+                  onClick={() => { setSearchQuery(''); setCategoryFilter('All'); }}
+                  className="mt-4 px-4 py-2 bg-slate-800 text-slate-300 hover:text-white rounded-lg text-xs font-semibold"
+                >
+                  Reset Filters
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {filteredComplaints.map(complaint => (
+                  <div key={complaint.id} className="bg-slate-900/80 border border-slate-800 hover:border-slate-700 rounded-xl p-6 transition flex flex-col justify-between shadow-xl">
+                    <div>
+                      <div className="flex items-center justify-between gap-2 mb-3">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-mono bg-slate-800 text-slate-300 px-2.5 py-1 rounded border border-slate-700/60">
+                            {complaint.id}
+                          </span>
+                          {complaint.verifiedPurchase && (
+                            <span className="text-[10px] font-mono bg-emerald-950/80 text-emerald-400 border border-emerald-800/50 px-2 py-0.5 rounded flex items-center gap-1">
+                              <CheckCircle className="w-3 h-3" /> Verified Student
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-xs font-mono text-slate-400">{complaint.dateSubmitted}</span>
+                      </div>
+
+                      <h3 className="text-lg font-bold text-white mb-2">{complaint.title}</h3>
+                      <p className="text-slate-300 text-sm leading-relaxed mb-4">{complaint.summary}</p>
+                    </div>
+
+                    <div className="pt-4 border-t border-slate-800/80 flex items-center justify-between">
+                      <span className="px-2.5 py-0.5 rounded text-xs font-medium bg-red-950/80 text-red-400 border border-red-800/40">
+                        {complaint.category}
+                      </span>
+
+                      <button 
+                        onClick={() => setSelectedComplaintModal(complaint)}
+                        className="text-xs font-semibold text-cyan-400 hover:text-cyan-300 flex items-center gap-1"
+                      >
+                        Read Full Experience <ChevronRight className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ================= EVIDENCE GALLERY PAGE ================= */}
+        {activeTab === 'evidence' && (
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <div className="mb-8">
+              <h1 className="text-3xl font-extrabold text-white">Redacted Evidence Gallery</h1>
+              <p className="text-slate-400 text-sm mt-1">Archived sales pages, payment documentation, and chat logs with PII redacted</p>
+            </div>
+
+            {/* Evidence Cards Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {filteredEvidence.map(item => (
+                <div 
+                  key={item.id}
+                  onClick={() => setSelectedEvidenceModal(item)}
+                  className="bg-slate-900/80 border border-slate-800 hover:border-slate-600 rounded-xl overflow-hidden cursor-pointer group transition shadow-xl"
+                >
+                  <div className="h-44 bg-slate-950 relative overflow-hidden">
+                    <img 
+                      src={item.redactedUrl} 
+                      alt={item.title} 
+                      className="w-full h-full object-cover group-hover:scale-105 transition duration-300 opacity-80 group-hover:opacity-100"
+                    />
+                    <div className="absolute top-2 right-2 bg-slate-950/80 backdrop-blur-md px-2 py-0.5 rounded text-[10px] font-mono text-emerald-400 border border-emerald-500/30">
+                      {item.status}
+                    </div>
+                  </div>
+
+                  <div className="p-4">
+                    <div className="text-[11px] font-mono text-slate-500 mb-1">{item.id} • {item.category}</div>
+                    <h3 className="font-bold text-white text-sm line-clamp-1 group-hover:text-cyan-400 transition">{item.title}</h3>
+                    <p className="text-xs text-slate-400 mt-2 line-clamp-2">{item.description}</p>
+                    
+                    <div className="mt-4 pt-3 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-500 font-mono">
+                      <span>GDrive Ref: {item.gdriveId.slice(0, 8)}...</span>
+                      <span className="text-cyan-400 hover:underline">View Specimen</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ================= PROVIDER RESPONSES PAGE ================= */}
+        {activeTab === 'responses' && (
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <div className="mb-8">
+              <span className="text-xs font-mono uppercase tracking-wider text-amber-500 font-bold">Right of Reply</span>
+              <h1 className="text-3xl font-extrabold text-white mt-1">10xTrader Official Provider Responses</h1>
+              <p className="text-slate-400 text-sm mt-1">Authenticated statements and official clarifications issued by course leadership</p>
+            </div>
+
+            {responses.length === 0 ? (
+              <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-12 text-center">
+                <MessageSquare className="w-10 h-10 text-slate-600 mx-auto mb-2" />
+                <p className="text-slate-400">No authenticated provider responses have been published yet.</p>
+              </div>
+            ) : (
+              <div className="space-y-6 max-w-4xl">
+                {responses.map(resp => (
+                  <div key={resp.id} className="bg-slate-900/90 border border-amber-900/40 rounded-xl p-6 shadow-xl">
+                    <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-800">
+                      <div>
+                        <span className="text-xs font-mono text-amber-400 bg-amber-950/60 border border-amber-800/40 px-2.5 py-1 rounded">
+                          {resp.status}
+                        </span>
+                        <h3 className="text-lg font-bold text-white mt-2">{resp.author}</h3>
+                      </div>
+                      <span className="text-xs font-mono text-slate-500">{resp.date}</span>
+                    </div>
+
+                    <p className="text-slate-300 text-sm leading-relaxed whitespace-pre-line mb-4">
+                      {resp.text}
+                    </p>
+
+                    <div className="text-xs text-slate-500 font-mono flex items-center justify-between pt-3 border-t border-slate-800/60">
+                      <span>Ref Complaint: {resp.relatedComplaintId}</span>
+                      <span className="text-slate-400">Source: {resp.sourceUrl}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ================= SUBMIT EVIDENCE FORM PAGE ================= */}
+        {activeTab === 'submit' && (
+          <div className="max-w-3xl mx-auto px-4 sm:px-6 py-12">
+            
+            <div className="mb-8 text-center">
+              <h1 className="text-3xl font-extrabold text-white">Submit Your Experience</h1>
+              <p className="text-slate-400 text-sm mt-2">
+                Help fellow traders by submitting your documented experience. All personal identity details remain strictly confidential and encrypted in our database.
+              </p>
+            </div>
+
+            {submissionSuccess ? (
+              <div className="bg-slate-900/90 border border-emerald-500/50 rounded-xl p-8 text-center space-y-4 shadow-2xl">
+                <div className="w-16 h-16 bg-emerald-950 text-emerald-400 rounded-full flex items-center justify-center mx-auto border border-emerald-500/30">
+                  <CheckCircle className="w-10 h-10" />
+                </div>
+                <h2 className="text-2xl font-bold text-white">Submission Stored For Moderation</h2>
+                <p className="text-slate-300 text-sm leading-relaxed max-w-md mx-auto">
+                  Your record has been assigned a reference ID and synced directly to our secure <strong>Google Drive Storage Vault</strong>. A moderator will redact any PII prior to publication.
+                </p>
+                <div className="pt-4">
+                  <button 
+                    onClick={() => setSubmissionSuccess(false)}
+                    className="px-6 py-2.5 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-sm font-semibold transition"
+                  >
+                    Submit Another Record
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <form onSubmit={handleSubmission} className="bg-slate-900/80 border border-slate-800 rounded-xl p-6 sm:p-8 space-y-6 shadow-2xl">
+                
+                {/* Form Field 1: Relationship */}
+                <div>
+                  <label className="block text-xs font-mono uppercase text-slate-400 mb-2">Claimed Relationship to Course *</label>
+                  <select 
+                    value={submitForm.relationship}
+                    onChange={(e) => setSubmitForm({ ...submitForm, relationship: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-red-500"
+                  >
+                    <option value="Student">Former / Active Student</option>
+                    <option value="Course provider or team">Course Provider or Team Member</option>
+                    <option value="Other">Other Observer</option>
+                  </select>
+                </div>
+
+                {/* Form Field 2: Display Pref & Privacy */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-mono uppercase text-slate-400 mb-2">Public Name Preference *</label>
+                    <select 
+                      value={submitForm.displayPref}
+                      onChange={(e) => setSubmitForm({ ...submitForm, displayPref: e.target.value })}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-red-500"
+                    >
+                      <option value="Masked name">Masked Name (e.g. M*** K.)</option>
+                      <option value="Anonymous">Completely Anonymous</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-mono uppercase text-slate-400 mb-2">Course Purchase Date</label>
+                    <input 
+                      type="text" 
+                      placeholder="e.g. February 2026"
+                      value={submitForm.courseDate}
+                      onChange={(e) => setSubmitForm({ ...submitForm, courseDate: e.target.value })}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-red-500"
+                    />
+                  </div>
+                </div>
+
+                {/* Form Field 3: Private Name & Email */}
+                <div className="p-4 bg-slate-950/80 border border-slate-800/80 rounded-lg space-y-4">
+                  <div className="flex items-center gap-2 text-xs font-mono text-cyan-400">
+                    <Lock className="w-3.5 h-3.5" /> Confidential Private Credentials (Never Displayed Publicly)
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs text-slate-400 mb-1">Full Legal Name *</label>
+                      <input 
+                        type="text" 
+                        required
+                        placeholder="John Doe"
+                        value={submitForm.privateName}
+                        onChange={(e) => setSubmitForm({ ...submitForm, privateName: e.target.value })}
+                        className="w-full bg-slate-900 border border-slate-800 rounded-md p-2.5 text-sm text-white focus:outline-none focus:border-red-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-slate-400 mb-1">Email Address *</label>
+                      <input 
+                        type="email" 
+                        required
+                        placeholder="john@example.com"
+                        value={submitForm.privateEmail}
+                        onChange={(e) => setSubmitForm({ ...submitForm, privateEmail: e.target.value })}
+                        className="w-full bg-slate-900 border border-slate-800 rounded-md p-2.5 text-sm text-white focus:outline-none focus:border-red-500"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Form Field 4: Title & Category */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="sm:col-span-2">
+                    <label className="block text-xs font-mono uppercase text-slate-400 mb-2">Experience Title *</label>
+                    <input 
+                      type="text" 
+                      required
+                      placeholder="Brief summary of your experience"
+                      value={submitForm.title}
+                      onChange={(e) => setSubmitForm({ ...submitForm, title: e.target.value })}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-red-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-mono uppercase text-slate-400 mb-2">Primary Category *</label>
+                    <select 
+                      value={submitForm.category}
+                      onChange={(e) => setSubmitForm({ ...submitForm, category: e.target.value })}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-red-500"
+                    >
+                      <option value="Course Content">Course Content</option>
+                      <option value="Misleading Claims">Misleading Claims</option>
+                      <option value="Refund Policy">Refund Policy</option>
+                      <option value="Support">Support</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Form Field 5: Detailed Account */}
+                <div>
+                  <label className="block text-xs font-mono uppercase text-slate-400 mb-2">Detailed Account *</label>
+                  <textarea 
+                    rows={5}
+                    required
+                    placeholder="Provide a factual, clear chronological account of your experience with dates and details..."
+                    value={submitForm.summary}
+                    onChange={(e) => setSubmitForm({ ...submitForm, summary: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-red-500"
+                  ></textarea>
+                </div>
+
+                {/* Form Field 6: Google Drive Attachment Dropzone Simulation */}
+                <div>
+                  <label className="block text-xs font-mono uppercase text-slate-400 mb-2">
+                    Supporting Evidence (Screenshots, Receipts)
+                  </label>
+                  <div className="border-2 border-dashed border-slate-800 hover:border-slate-700 bg-slate-950/50 rounded-xl p-6 text-center cursor-pointer transition">
+                    <HardDrive className="w-8 h-8 text-cyan-500 mx-auto mb-2" />
+                    <p className="text-sm font-medium text-slate-300">Click to select files or drag screenshots here</p>
+                    <p className="text-xs text-slate-500 mt-1">Directly uploaded to private Google Drive Folder via OAuth API (PNG, JPG, PDF up to 25MB)</p>
+                    <input 
+                      type="file" 
+                      onChange={(e) => setSubmitForm({ ...submitForm, fileAttached: e.target.files[0] ? e.target.files[0].name : null })}
+                      className="mt-3 text-xs text-slate-400" 
+                    />
+                  </div>
+                  {submitForm.fileAttached && (
+                    <div className="mt-2 text-xs font-mono text-emerald-400 flex items-center gap-1">
+                      <CheckCircle className="w-3.5 h-3.5" /> File Attached: {submitForm.fileAttached}
+                    </div>
+                  )}
+                </div>
+
+                {/* Consent Checkbox */}
+                <div className="flex items-start gap-3 pt-2">
+                  <input 
+                    type="checkbox" 
+                    id="consent"
+                    checked={submitForm.consent}
+                    onChange={(e) => setSubmitForm({ ...submitForm, consent: e.target.checked })}
+                    className="mt-1 rounded bg-slate-950 border-slate-800 text-red-600 focus:ring-0"
+                  />
+                  <label htmlFor="consent" className="text-xs text-slate-400 leading-relaxed cursor-pointer">
+                    I confirm that I am authorized to share this information and that all stated facts represent a true and accurate account of my personal experience. I understand that moderators will redact sensitive details before publication.
+                  </label>
+                </div>
+
+                {/* Submit Action */}
+                <button 
+                  type="submit"
+                  disabled={isUploading}
+                  className="w-full py-3.5 rounded-lg bg-red-600 hover:bg-red-500 disabled:opacity-50 text-white font-bold text-base shadow-lg shadow-red-950/50 transition flex items-center justify-center gap-2"
+                >
+                  {isUploading ? (
+                    <>
+                      <RefreshCw className="w-5 h-5 animate-spin" /> Stream Uploading to Google Drive...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-5 h-5" /> Submit For Moderation
+                    </>
+                  )}
+                </button>
+
+              </form>
+            )}
+
+          </div>
+        )}
+
+        {/* ================= GOOGLE DRIVE STORAGE CONFIG PAGE ================= */}
+        {activeTab === 'gdrive' && (
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <div className="mb-8">
+              <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded bg-emerald-950/60 border border-emerald-800/40 text-emerald-400 text-xs font-mono mb-2">
+                <HardDrive className="w-3.5 h-3.5" /> Zero-Extra-Cost Cloud Storage Architecture
+              </div>
+              <h1 className="text-3xl font-extrabold text-white">Google Drive API Integration Pipeline</h1>
+              <p className="text-slate-400 text-sm mt-1">
+                How 10xTrader Watch securely streams raw evidence directly into free Google Workspace/Drive storage to avoid expensive bucket fees.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+              <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-6">
+                <div className="w-8 h-8 rounded bg-cyan-950 text-cyan-400 flex items-center justify-center font-bold text-sm mb-4">1</div>
+                <h3 className="font-bold text-white text-base mb-2">Client-Side Upload</h3>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  Submitter attaches screenshots or receipts in the web browser. The file is validated for extension, MIME-type, and strict size caps.
+                </p>
+              </div>
+
+              <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-6">
+                <div className="w-8 h-8 rounded bg-amber-950 text-amber-400 flex items-center justify-center font-bold text-sm mb-4">2</div>
+                <h3 className="font-bold text-white text-base mb-2">OAuth Service Account Stream</h3>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  The backend streams the binary payload into a designated restricted Google Drive Folder using a Service Account JWT token.
+                </p>
+              </div>
+
+              <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-6">
+                <div className="w-8 h-8 rounded bg-emerald-950 text-emerald-400 flex items-center justify-center font-bold text-sm mb-4">3</div>
+                <h3 className="font-bold text-white text-base mb-2">Redaction & Public Proxy</h3>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  Moderators review the raw file in Admin view, scrub personal names or addresses, and save a public redacted version to Google Drive.
+                </p>
+              </div>
+            </div>
+
+            {/* Simulated Architecture Code Snippet */}
+            <div className="bg-slate-950 border border-slate-800 rounded-xl p-6 font-mono text-xs text-slate-300 overflow-x-auto shadow-2xl">
+              <div className="text-slate-500 mb-3">// Google Drive Node.js Integration Config Example</div>
+              <div className="text-cyan-400">const</div> <span className="text-white">{`{ google }`}</span> = <span className="text-emerald-400">require</span>(<span className="text-amber-300">'googleapis'</span>);<br/><br/>
+              <div className="text-cyan-400">const</div> <span className="text-white">auth</span> = <div className="text-cyan-400 inline">new</div> <span className="text-yellow-300">google.auth.GoogleAuth</span>({`{`}<br/>
+              &nbsp;&nbsp;keyFile: <span className="text-amber-300">'./credentials/google-drive-sa.json'</span>,<br/>
+              &nbsp;&nbsp;scopes: [<span className="text-amber-300">'https://www.googleapis.com/auth/drive.file'</span>]<br/>
+              {`}`});<br/><br/>
+              <div className="text-slate-500">// Upload File Directly to Target GDrive Folder</div>
+              <div className="text-cyan-400">async function</div> <span className="text-yellow-300">uploadEvidenceToDrive</span>(fileStream, fileName) {`{`}<br/>
+              &nbsp;&nbsp;<div className="text-cyan-400">const</div> drive = google.<span className="text-yellow-300">drive</span>({`{`} version: <span className="text-amber-300">'v3'</span>, auth {`}`});<br/>
+              &nbsp;&nbsp;<div className="text-cyan-400">return await</div> drive.files.<span className="text-yellow-300">create</span>({`{`}<br/>
+              &nbsp;&nbsp;&nbsp;&nbsp;requestBody: {`{`}<br/>
+              &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;name: fileName,<br/>
+              &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;parents: [<span className="text-amber-300">process.env.GDRIVE_VAULT_FOLDER_ID</span>]<br/>
+              &nbsp;&nbsp;&nbsp;&nbsp;{`}`},<br/>
+              &nbsp;&nbsp;&nbsp;&nbsp;media: {`{`} body: fileStream {`}`}<br/>
+              &nbsp;&nbsp;{`}`});<br/>
+              {`}`}
+            </div>
+          </div>
+        )}
+
+        {/* ================= ADMIN MODERATION WORKSPACE PAGE ================= */}
+        {activeTab === 'admin' && (
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-mono uppercase bg-cyan-950 text-cyan-400 border border-cyan-800 px-2 py-0.5 rounded">
+                    Protected Console
+                  </span>
+                  <span className="text-xs font-mono text-slate-500">User: Moderator_Alpha</span>
+                </div>
+                <h1 className="text-3xl font-extrabold text-white mt-1">Admin Moderation Dashboard</h1>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <button 
+                  onClick={() => setIsAdminMode(false)}
+                  className="px-4 py-2 bg-slate-900 border border-slate-700 text-slate-300 text-xs font-semibold rounded-lg hover:text-white"
+                >
+                  Exit Admin View
+                </button>
+              </div>
+            </div>
+
+            {/* Pending Submissions Queue */}
+            <div className="mb-12">
+              <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                <Clock className="w-5 h-5 text-amber-400" /> Pending Moderation Queue ({complaints.filter(c => c.status === 'Pending').length})
+              </h2>
+
+              <div className="space-y-4">
+                {complaints.filter(c => c.status === 'Pending').length === 0 ? (
+                  <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-8 text-center text-slate-500 text-sm">
+                    No pending submissions waiting in moderation queue.
+                  </div>
+                ) : (
+                  complaints.filter(c => c.status === 'Pending').map(item => (
+                    <div key={item.id} className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-xl">
+                      
+                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-mono bg-slate-800 text-slate-300 px-2 py-0.5 rounded">{item.id}</span>
+                            <span className="text-xs font-mono text-amber-400">Submitted: {item.dateSubmitted}</span>
+                          </div>
+                          <h3 className="text-base font-bold text-white mt-1">{item.title}</h3>
+                        </div>
+
+                        {/* Admin Action Buttons */}
+                        <div className="flex items-center gap-2">
+                          <button 
+                            onClick={() => handleApproveComplaint(item.id)}
+                            className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded text-xs font-semibold transition"
+                          >
+                            Approve & Publish
+                          </button>
+                          <button 
+                            onClick={() => handleRejectComplaint(item.id)}
+                            className="px-3.5 py-1.5 bg-red-950 hover:bg-red-900 text-red-400 border border-red-800 rounded text-xs font-semibold transition"
+                          >
+                            Reject Entry
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Private Submitter Details Revealed */}
+                      <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-950 p-4 rounded-lg text-xs font-mono border border-slate-800/80">
+                        <div>
+                          <span className="text-slate-500 block">Private Submitter Name:</span>
+                          <span className="text-cyan-400 font-bold">{item.privateName}</span>
+                        </div>
+                        <div>
+                          <span className="text-slate-500 block">Confidential Email:</span>
+                          <span className="text-cyan-400">{item.privateEmail}</span>
+                        </div>
+                        <div>
+                          <span className="text-slate-500 block">Google Drive Storage Handle:</span>
+                          <span className="text-emerald-400">GDRIVE_STREAM_OK</span>
+                        </div>
+                      </div>
+
+                      <p className="mt-4 text-xs text-slate-300 leading-relaxed">
+                        {item.summary}
+                      </p>
+
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* Audit Log Table */}
+            <div>
+              <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                <FileCheck className="w-5 h-5 text-cyan-400" /> Moderation Action Audit Log
+              </h2>
+
+              <div className="bg-slate-900/80 border border-slate-800 rounded-xl overflow-hidden text-xs font-mono">
+                <table className="w-full text-left">
+                  <thead className="bg-slate-950 text-slate-400 border-b border-slate-800">
+                    <tr>
+                      <th className="p-3">Timestamp</th>
+                      <th className="p-3">Log ID</th>
+                      <th className="p-3">Action Description</th>
+                      <th className="p-3">Admin Handle</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800/80 text-slate-300">
+                    {auditLog.map(log => (
+                      <tr key={log.id} className="hover:bg-slate-800/30">
+                        <td className="p-3 text-slate-500">{log.time}</td>
+                        <td className="p-3 text-cyan-400">{log.id}</td>
+                        <td className="p-3">{log.action}</td>
+                        <td className="p-3 text-slate-400">{log.admin}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+          </div>
+        )}
+
+        {/* ================= ABOUT PAGE ================= */}
+        {activeTab === 'about' && (
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 py-12">
+            <h1 className="text-3xl font-extrabold text-white mb-6">About 10xTrader Watch</h1>
+            
+            <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-8 space-y-6 text-slate-300 text-sm leading-relaxed shadow-xl">
+              <p>
+                <strong>10xTrader Watch</strong> is an independent, non-commercial consumer protection and document research platform dedicated to bringing radical transparency to retail trading education.
+              </p>
+
+              <h2 className="text-lg font-bold text-white pt-2 border-t border-slate-800">Our Mission</h2>
+              <p>
+                The retail trading education industry is rife with unverified profit screenshots, aggressive sales tactics, and restrictive refund policies. We provide a structured environment where prospective students can read verified experiences, examine redacted evidence, and make informed choices before spending thousands of dollars.
+              </p>
+
+              <h2 className="text-lg font-bold text-white pt-2 border-t border-slate-800">Strict Moderation & Right of Reply</h2>
+              <p>
+                We operate under rigorous journalistic standards. Every submission undergoes human review to remove personal private information (PII) before publication. Furthermore, we provide course providers an authenticated <strong>Right of Reply</strong> portal to clarify or correct claims.
+              </p>
+
+              <div className="flex items-center gap-4 pt-4">
+                <button 
+                  onClick={() => setLegalModalContent('terms')}
+                  className="text-xs text-red-400 underline hover:text-red-300 font-mono"
+                >
+                  Terms of Service
+                </button>
+                <button 
+                  onClick={() => setLegalModalContent('privacy')}
+                  className="text-xs text-red-400 underline hover:text-red-300 font-mono"
+                >
+                  Privacy Policy
+                </button>
+                <button 
+                  onClick={() => setLegalModalContent('handling')}
+                  className="text-xs text-red-400 underline hover:text-red-300 font-mono"
+                >
+                  Evidence Handling Guidelines
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+      </main>
+
+      {/* --- FOOTER --- */}
+      <footer className="bg-[#05070a] border-t border-slate-800/80 py-12 px-4 sm:px-6 lg:px-8 mt-auto">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-8 mb-8 text-xs text-slate-400">
+          
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <Shield className="w-5 h-5 text-red-500" />
+              <span className="font-extrabold text-white uppercase font-mono text-sm">10xTrader<span className="text-red-500">Watch</span></span>
+            </div>
+            <p className="leading-relaxed text-slate-500">
+              An independent consumer-awareness research platform. Not affiliated with 10xTrader or any trading course provider.
+            </p>
+          </div>
+
+          <div>
+            <h4 className="font-bold text-white uppercase font-mono text-xs mb-3">Quick Navigation</h4>
+            <ul className="space-y-2">
+              <li><button onClick={() => setActiveTab('what-we-found')} className="hover:text-white">What We Found</button></li>
+              <li><button onClick={() => setActiveTab('complaints')} className="hover:text-white">Student Complaints</button></li>
+              <li><button onClick={() => setActiveTab('evidence')} className="hover:text-white">Evidence Gallery</button></li>
+              <li><button onClick={() => setActiveTab('responses')} className="hover:text-white">Provider Right-of-Reply</button></li>
+            </ul>
+          </div>
+
+          <div>
+            <h4 className="font-bold text-white uppercase font-mono text-xs mb-3">Legal & Governance</h4>
+            <ul className="space-y-2">
+              <li><button onClick={() => setLegalModalContent('terms')} className="hover:text-white">Terms of Use</button></li>
+              <li><button onClick={() => setLegalModalContent('privacy')} className="hover:text-white">Privacy Policy</button></li>
+              <li><button onClick={() => setLegalModalContent('handling')} className="hover:text-white">Evidence Handling</button></li>
+            </ul>
+          </div>
+
+          <div>
+            <h4 className="font-bold text-white uppercase font-mono text-xs mb-3">Infrastructure</h4>
+            <p className="leading-relaxed text-slate-500 mb-2">
+              Attachment storage powered by Google Drive API & Private Service Accounts.
+            </p>
+            <button 
+              onClick={() => setActiveTab('gdrive')}
+              className="text-cyan-400 hover:underline flex items-center gap-1 font-mono"
+            >
+              <HardDrive className="w-3.5 h-3.5" /> View Storage Specs
+            </button>
+          </div>
+
+        </div>
+
+        <div className="max-w-7xl mx-auto pt-6 border-t border-slate-900 flex flex-col sm:flex-row items-center justify-between text-[11px] text-slate-600 font-mono">
+          <div>© 2026 10xTrader Watch. All rights reserved.</div>
+          <div className="mt-2 sm:mt-0">Built for consumer awareness & factual transparency.</div>
+        </div>
+      </footer>
+
+      {/* ================= MODALS & OVERLAYS ================= */}
+
+      {/* 1. READ EXPERIENCE COMPLAINT MODAL */}
+      {selectedComplaintModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-slate-900 border border-slate-800 rounded-xl max-w-2xl w-full p-6 shadow-2xl relative space-y-4">
+            
+            <button 
+              onClick={() => setSelectedComplaintModal(null)}
+              className="absolute top-4 right-4 p-1.5 text-slate-400 hover:text-white rounded-lg bg-slate-950 border border-slate-800"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-mono bg-slate-800 text-slate-300 px-2.5 py-1 rounded">
+                {selectedComplaintModal.id}
+              </span>
+              <span className="text-xs font-mono bg-red-950/80 text-red-400 border border-red-800/40 px-2.5 py-1 rounded">
+                {selectedComplaintModal.category}
+              </span>
+            </div>
+
+            <h2 className="text-xl font-bold text-white">{selectedComplaintModal.title}</h2>
+
+            <div className="p-4 bg-slate-950 rounded-lg text-xs font-mono text-slate-400 grid grid-cols-2 gap-2 border border-slate-800">
+              <div>Submitter: <strong className="text-white">{selectedComplaintModal.submitter}</strong></div>
+              <div>Course Date: <strong className="text-white">{selectedComplaintModal.courseDate}</strong></div>
+              <div>Date Logged: <strong className="text-white">{selectedComplaintModal.dateSubmitted}</strong></div>
+              <div>Affiliation: <strong className="text-white">{selectedComplaintModal.relationship}</strong></div>
+            </div>
+
+            <div>
+              <h4 className="text-xs font-mono uppercase text-slate-400 mb-1">Detailed Account</h4>
+              <p className="text-sm text-slate-200 leading-relaxed whitespace-pre-line bg-slate-950/50 p-4 rounded-lg border border-slate-800/60">
+                {selectedComplaintModal.summary}
+              </p>
+            </div>
+
+            {/* Provider Response Attachment if exists */}
+            {selectedComplaintModal.providerResponseId && (
+              <div className="p-4 bg-amber-950/30 border border-amber-900/50 rounded-lg">
+                <div className="text-xs font-bold text-amber-400 flex items-center gap-1 mb-1">
+                  <CheckCircle className="w-3.5 h-3.5" /> Course Provider Official Response Attached
+                </div>
+                <p className="text-xs text-slate-300">
+                  {responses.find(r => r.id === selectedComplaintModal.providerResponseId)?.text}
+                </p>
+              </div>
+            )}
+
+            <div className="pt-2 flex justify-end">
+              <button 
+                onClick={() => setSelectedComplaintModal(null)}
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold rounded-lg"
+              >
+                Close Reader
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* 2. SPECIMEN EVIDENCE LIGHTBOX MODAL */}
+      {selectedEvidenceModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-slate-900 border border-slate-800 rounded-xl max-w-3xl w-full p-6 shadow-2xl relative space-y-4">
+            
+            <button 
+              onClick={() => setSelectedEvidenceModal(null)}
+              className="absolute top-4 right-4 p-1.5 text-slate-400 hover:text-white rounded-lg bg-slate-950 border border-slate-800"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="text-xs font-mono text-cyan-400">{selectedEvidenceModal.id} • {selectedEvidenceModal.category}</div>
+            <h2 className="text-xl font-bold text-white">{selectedEvidenceModal.title}</h2>
+
+            {/* Image Preview Box */}
+            <div className="max-h-96 rounded-lg overflow-hidden bg-black border border-slate-800 flex items-center justify-center">
+              <img src={selectedEvidenceModal.redactedUrl} alt={selectedEvidenceModal.title} className="max-h-96 w-auto object-contain" />
+            </div>
+
+            <p className="text-xs text-slate-300 leading-relaxed bg-slate-950 p-3 rounded border border-slate-800">
+              {selectedEvidenceModal.description}
+            </p>
+
+            <div className="text-[11px] font-mono text-slate-500 bg-slate-950 p-2 rounded flex items-center justify-between">
+              <span>Redaction Note: {selectedEvidenceModal.redactionNotes}</span>
+              <span>GDrive Sync: OK</span>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* 3. GLOBAL SEARCH MODAL */}
+      {showSearchModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-start justify-center pt-20 px-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-xl max-w-xl w-full p-4 shadow-2xl space-y-4">
+            <div className="relative">
+              <Search className="w-5 h-5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input 
+                type="text" 
+                autoFocus
+                placeholder="Search across all records, evidence, and claims..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg pl-10 pr-10 py-3 text-sm text-white focus:outline-none focus:border-red-500"
+              />
+              <button onClick={() => setShowSearchModal(false)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="text-xs font-mono text-slate-500 px-1">
+              Pressing Search filters active dataset. Click below to view results in directory.
+            </div>
+
+            <button 
+              onClick={() => { setShowSearchModal(false); setActiveTab('complaints'); }}
+              className="w-full py-2 bg-red-600 hover:bg-red-500 text-white text-xs font-semibold rounded-lg"
+            >
+              Apply Filter & View Directory
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 4. LEGAL DOCUMENTS MODAL */}
+      {legalModalContent && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-xl max-w-xl w-full p-6 shadow-2xl relative space-y-4 text-xs text-slate-300">
+            <button 
+              onClick={() => setLegalModalContent(null)}
+              className="absolute top-4 right-4 p-1.5 text-slate-400 hover:text-white rounded-lg bg-slate-950 border border-slate-800"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <h2 className="text-lg font-bold text-white uppercase font-mono">
+              {legalModalContent === 'terms' && 'Terms of Use'}
+              {legalModalContent === 'privacy' && 'Privacy Policy'}
+              {legalModalContent === 'handling' && 'Evidence Handling Protocol'}
+            </h2>
+
+            <div className="max-h-72 overflow-y-auto space-y-3 leading-relaxed p-3 bg-slate-950 rounded border border-slate-800">
+              <p>
+                10xTrader Watch operates under strict fair-use and public interest guidelines. We do not host defamatory or unverified personal attacks.
+              </p>
+              <p>
+                <strong>Private Data Storage:</strong> Original submitted files containing unredacted credentials, names, or banking details are stored strictly in private, non-public Google Drive buckets accessed only by authorized human moderators.
+              </p>
+              <p>
+                <strong>Correction Policy:</strong> If you are a representative of 10xTrader and wish to submit a formal response or request a factual correction, please utilize our Provider Response portal.
+              </p>
+            </div>
+
+            <div className="pt-2 flex justify-end">
+              <button 
+                onClick={() => setLegalModalContent(null)}
+                className="px-4 py-2 bg-slate-800 text-white rounded text-xs font-semibold"
+              >
+                I Understand
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
+}
+
+  </script>
+</body>
+</html>
