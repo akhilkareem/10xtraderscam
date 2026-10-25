@@ -27,6 +27,41 @@
     // Client-side demo gate only; it is NOT secure authentication.
     const ADMIN_PASSWORD_HASH = "MTB4YWRtaW4yMDI2";
 
+    // Apps Script must implement JSONP doGet actions: list, submit, approve, reject, delete.
+    function callBackend(action, params = {}) {
+      return new Promise((resolve, reject) => {
+        const callbackName = "__xwatch_cb_" + Math.random().toString(36).slice(2);
+        const script = document.createElement("script");
+        let finished = false;
+        const finish = (err, result) => {
+          if (finished) return;
+          finished = true;
+          clearTimeout(timeout);
+          try { delete window[callbackName]; } catch (_) { window[callbackName] = undefined; }
+          script.remove();
+          err ? reject(err) : resolve(result);
+        };
+        const timeout = setTimeout(() => finish(new Error("Google Apps Script did not respond to action=" + action + ". Its doGet handler must support this action.")), 15000);
+        window[callbackName] = result => {
+          if (!result || result.ok === false) return finish(new Error(result?.error || "Backend request failed."));
+          finish(null, result);
+        };
+        const query = new URLSearchParams({ action, callback: callbackName, ...params });
+        script.src = GOOGLE_SCRIPT_URL + "?" + query.toString();
+        script.onerror = () => finish(new Error("Could not reach the Google Apps Script web app."));
+        document.head.appendChild(script);
+      });
+    }
+
+    function readFileAsDataURL(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(new Error("Could not read the selected evidence file."));
+        reader.readAsDataURL(file);
+      });
+    }
+
     // Helper function to automatically mask submitter names (e.g. "Rahul Verma" -> "R*** V.")
     const maskName = (fullName) => {
       if (!fullName || fullName.toLowerCase() === 'anonymous') return 'Anonymous';
@@ -105,12 +140,48 @@
       
       const [complaints, setComplaints] = useState(savedState?.complaints || INITIAL_COMPLAINTS);
       const [evidenceItems, setEvidenceItems] = useState(savedState?.evidenceItems || INITIAL_EVIDENCE);
+      const [backendMessage, setBackendMessage] = useState("");
+      const [isSyncing, setIsSyncing] = useState(false);
       const [toastMessage, setToastMessage] = useState(null);
 
       React.useEffect(() => {
         try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ complaints, evidenceItems })); }
-        catch (_) {}
+        catch (_) { setBackendMessage("Browser storage is unavailable or full."); }
       }, [complaints, evidenceItems]);
+
+      const normalizeComplaint = (c, i) => {
+        const status = String(c.status || c.reviewStatus || "Pending");
+        return {
+          id: String(c.id || c.ID || c.submissionId || ("CMP-" + (i + 1))),
+          submitter: c.submitter || maskName(c.privateName || c.name || ""),
+          paid: c.paid || c.paidAmount || "",
+          relationship: c.relationship || "",
+          dateSubmitted: c.dateSubmitted || c.date || c.timestamp || c.submittedAt || "",
+          title: c.title || c.summary || c.description || "Submission",
+          category: c.category || "Other",
+          tag2: c.tag2 || status,
+          status: /approve|publish/i.test(status) ? "Approved" : (/reject|declin/i.test(status) ? "Rejected" : "Pending"),
+          privateEmail: c.privateEmail || c.email || "",
+          fileUrl: c.fileUrl || c.driveUrl || c.evidenceUrl || ""
+        };
+      };
+
+      const refreshAdminQueue = async () => {
+        setIsSyncing(true);
+        setBackendMessage("");
+        try {
+          const result = await callBackend("list");
+          if (!Array.isArray(result.complaints)) throw new Error("Apps Script response must include complaints: [...].");
+          setComplaints(result.complaints.map(normalizeComplaint));
+          if (Array.isArray(result.evidenceItems)) setEvidenceItems(result.evidenceItems);
+          setBackendMessage("Synced successfully with Google backend.");
+          triggerToast("Queue updated from Google Drive!");
+        } catch (err) {
+          setBackendMessage(err.message);
+        } finally { setIsSyncing(false); }
+      };
+
+      React.useEffect(() => { if (adminAuthenticated) refreshAdminQueue(); }, [adminAuthenticated]);
 
       const [submitForm, setSubmitForm] = useState({
         relationship: 'Student',
@@ -157,21 +228,29 @@
         }
       };
 
-      const handleApprove = (id) => {
-        setComplaints(prev => prev.map(c => c.id === id ? { ...c, status: 'Approved', tag2: 'Approved' } : c));
-        triggerToast(`Complaint ${id} approved & published!`);
+      const handleApprove = async (id) => {
+        try {
+          await callBackend("approve", { id });
+          setComplaints(prev => prev.map(c => c.id === id ? { ...c, status: "Approved", tag2: "Approved" } : c));
+          triggerToast(`Complaint ${id} approved.`);
+        } catch (err) { setBackendMessage(err.message); alert("Approval not confirmed: " + err.message); }
       };
 
-      const handleReject = (id) => {
-        setComplaints(prev => prev.map(c => c.id === id ? { ...c, status: 'Rejected', tag2: 'Rejected' } : c));
-        triggerToast(`Complaint ${id} rejected.`);
+      const handleReject = async (id) => {
+        try {
+          await callBackend("reject", { id });
+          setComplaints(prev => prev.map(c => c.id === id ? { ...c, status: "Rejected", tag2: "Rejected" } : c));
+          triggerToast(`Complaint ${id} rejected.`);
+        } catch (err) { setBackendMessage(err.message); alert("Rejection not confirmed: " + err.message); }
       };
 
-      const handleDeleteComplaint = (id) => {
-        if (confirm(`Permanently delete complaint ${id}?`)) {
+      const handleDeleteComplaint = async (id) => {
+        if (!confirm(`Permanently delete complaint ${id}?`)) return;
+        try {
+          await callBackend("delete", { id });
           setComplaints(prev => prev.filter(c => c.id !== id));
           triggerToast(`Complaint ${id} deleted.`);
-        }
+        } catch (err) { setBackendMessage(err.message); alert("Deletion not confirmed: " + err.message); }
       };
 
       const handleDeleteEvidence = (id) => {
@@ -183,57 +262,39 @@
 
       const handleSubmission = async (e) => {
         e.preventDefault();
-        if (!submitForm.consent) {
-          alert("Please confirm authorization checkbox.");
-          return;
-        }
-
+        if (!submitForm.consent) { alert("Please confirm authorization checkbox."); return; }
+        if (submitForm.rawFile && submitForm.rawFile.size > 5 * 1024 * 1024) { alert("Please upload a file smaller than 5 MB."); return; }
         setIsUploading(true);
-
-        // 1. Immediately create pending record locally so it appears in queue instantly
-        const newId = `CMP-2026-${Math.floor(100 + Math.random() * 900)}`;
-        const newRecord = {
-          id: newId,
-          submitter: maskName(submitForm.privateName),
-          paid: submitForm.paidAmount,
-          relationship: submitForm.relationship,
-          dateSubmitted: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
-          title: `“${submitForm.title}: ${submitForm.summary}”`,
-          category: submitForm.category,
-          tag2: 'Pending Review',
-          status: 'Pending',
-          privateEmail: submitForm.privateEmail
-        };
-
-        setComplaints(prev => [newRecord, ...prev]);
-        setSubmissionSuccess(true);
-        setIsUploading(false);
-        triggerToast("Successfully saved to review queue & Database!");
-
-        // 2. Send payload to Google Script backend in the background (no-cors)
         try {
-          let fileName = "";
-          if (submitForm.rawFile) {
-            fileName = submitForm.rawFile.name;
-          }
-
+          const fileData = submitForm.rawFile ? await readFileAsDataURL(submitForm.rawFile) : "";
           const payload = {
-            title: submitForm.title,
-            summary: submitForm.summary,
-            category: submitForm.category,
-            relationship: submitForm.relationship,
-            privateName: submitForm.privateName,
-            privateEmail: submitForm.privateEmail,
-            fileName: fileName
+            id: "CMP-" + Date.now(), title: submitForm.title.trim(), summary: submitForm.summary.trim(),
+            category: submitForm.category, relationship: submitForm.relationship,
+            privateName: submitForm.privateName.trim(), privateEmail: submitForm.privateEmail.trim(),
+            paidAmount: submitForm.paidAmount, fileName: submitForm.rawFile?.name || "",
+            fileMimeType: submitForm.rawFile?.type || "", fileData, status: "Pending", submittedAt: new Date().toISOString()
           };
-
-          fetch(GOOGLE_SCRIPT_URL, {
-            method: "POST",
-            mode: "no-cors",
+          
+          await fetch(GOOGLE_SCRIPT_URL, {
+            method: "POST", mode: "no-cors",
             headers: { "Content-Type": "text/plain" },
-            body: JSON.stringify(payload)
-          }).catch(() => {});
-        } catch (err) {}
+            body: JSON.stringify({ action: "submit", ...payload })
+          });
+          
+          const newRecord = normalizeComplaint({
+            ...payload, submitter: maskName(payload.privateName), paid: payload.paidAmount,
+            dateSubmitted: new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
+            title: `“${payload.title}: ${payload.summary}”`, status: "Pending", privateEmail: payload.privateEmail
+          });
+          setComplaints(prev => [newRecord, ...prev.filter(c => c.id !== newRecord.id)]);
+          setSubmissionSuccess(true);
+          triggerToast("Submission sent! Click 'Refresh from Google backend' to verify.");
+          setSubmitForm(prev => ({ ...prev, privateName: "", privateEmail: "", title: "", summary: "", rawFile: null, consent: false }));
+          const fileInput = document.getElementById("evidence-file"); if (fileInput) fileInput.value = "";
+        } catch (err) {
+          setBackendMessage(err.message);
+          alert("Submission could not be confirmed. " + err.message);
+        } finally { setIsUploading(false); }
       };
 
       return (
@@ -363,7 +424,6 @@
             <section id="analysis" className="max-w-7xl mx-auto px-4 mb-20">
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                 
-                {/* Left Description */}
                 <div className="lg:col-span-5 space-y-4">
                   <div className="w-1.5 h-8 bg-red-600 rounded-full"></div>
                   <h2 className="text-2xl sm:text-3xl font-bold text-white">What We Found</h2>
@@ -373,7 +433,6 @@
                   <a href="#complaints" className="inline-block text-xs font-bold text-red-400 hover:text-red-300 pt-2">Read Full Report →</a>
                 </div>
 
-                {/* Right Comparison Table */}
                 <div id="claims" className="lg:col-span-7 bg-slate-900 border border-slate-800 rounded-xl p-6 sm:p-8">
                   <h3 className="text-lg font-bold text-white mb-6">What They Promised vs What They Delivered</h3>
                   
@@ -540,7 +599,7 @@
 
                     <div>
                       <label className="block text-xs font-mono text-slate-400 mb-1">Upload Screenshot / Evidence File</label>
-                      <input type="file" onChange={e => setSubmitForm({...submitForm, rawFile: e.target.files[0]})} className="text-xs text-slate-400 block w-full file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-slate-800 file:text-white hover:file:bg-slate-700 cursor-pointer" />
+                      <input id="evidence-file" type="file" accept="image/*,.pdf,.doc,.docx,.txt" onChange={e => setSubmitForm({...submitForm, rawFile: e.target.files[0]})} className="text-xs text-slate-400 block w-full file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-slate-800 file:text-white hover:file:bg-slate-700 cursor-pointer" />
                     </div>
 
                     <div className="flex items-start gap-3 pt-2">
@@ -567,6 +626,13 @@
                     </div>
                     <button onClick={() => setAdminAuthenticated(false)} className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-semibold">
                       Lock Session
+                    </button>
+                  </div>
+
+                  <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-950 p-4 rounded-xl border border-slate-800">
+                    <p className="text-xs text-slate-400">{backendMessage || "Click refresh to load your files from Google Drive."}</p>
+                    <button onClick={refreshAdminQueue} disabled={isSyncing} className="px-4 py-2 bg-cyan-700 hover:bg-cyan-600 disabled:opacity-50 text-white rounded-lg text-xs font-bold transition">
+                      {isSyncing ? "Syncing..." : "Refresh from Google backend"}
                     </button>
                   </div>
 
