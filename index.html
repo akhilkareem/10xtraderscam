@@ -20,7 +20,7 @@
   <div id="root" class="flex-1 flex flex-col"></div>
 
   <script type="text/babel">
-    const { useState, useMemo } = React;
+    const { useState, useMemo, useEffect } = React;
 
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxmo88hrElpBl6V3o7j0MPDuxiWYwHXvph4Rrd1nx_AbYJw2vB3hXQIT8jvaX4FwsM5/exec";
     
@@ -38,7 +38,7 @@
       return `${maskedFirst} ${maskedLast}`.trim();
     };
 
-    const INITIAL_COMPLAINTS = [
+    const DEFAULT_COMPLAINTS = [
       {
         id: 'CMP-2026-089',
         submitter: 'S*** P.',
@@ -89,7 +89,7 @@
       }
     ];
 
-    const INITIAL_EVIDENCE = [
+    const DEFAULT_EVIDENCE = [
       { id: 'EV-101', title: 'Instagram Ad — Course Promotion', category: 'Screenshot from Instagram', date: '2024-10-01', description: 'Promotional ad promising live trading and lifetime support.' },
       { id: 'EV-102', title: 'UPI Transaction Screenshot', category: 'Payment Proof', date: '2024-10-05', description: '₹35,000 payment transfer confirmation to course provider.' },
       { id: 'EV-103', title: 'Chat Transcript with Instructor', category: 'Telegram Chat', date: '2024-10-10', description: 'Instructor stating OCL level is enough to be profitable.' },
@@ -101,9 +101,27 @@
       const [passwordInput, setPasswordInput] = useState('');
       const [showAdminModal, setShowAdminModal] = useState(false);
       
-      const [complaints, setComplaints] = useState(INITIAL_COMPLAINTS);
-      const [evidenceItems, setEvidenceItems] = useState(INITIAL_EVIDENCE);
+      // Load complaints and evidence from localStorage so they persist across tabs/refreshes
+      const [complaints, setComplaints] = useState(() => {
+        const saved = localStorage.getItem('10x_complaints');
+        return saved ? JSON.parse(saved) : DEFAULT_COMPLAINTS;
+      });
+
+      const [evidenceItems, setEvidenceItems] = useState(() => {
+        const saved = localStorage.getItem('10x_evidence');
+        return saved ? JSON.parse(saved) : DEFAULT_EVIDENCE;
+      });
+
       const [toastMessage, setToastMessage] = useState(null);
+
+      // Save to localStorage whenever complaints or evidence change
+      useEffect(() => {
+        localStorage.setItem('10x_complaints', JSON.stringify(complaints));
+      }, [complaints]);
+
+      useEffect(() => {
+        localStorage.setItem('10x_evidence', JSON.stringify(evidenceItems));
+      }, [evidenceItems]);
 
       const [submitForm, setSubmitForm] = useState({
         relationship: 'Student',
@@ -201,7 +219,7 @@
           const newId = `CMP-2026-${Math.floor(100 + Math.random() * 900)}`;
           const newRecord = {
             id: newId,
-            submitter: maskName(submitForm.privateName), // Automatically mask submitter name here
+            submitter: maskName(submitForm.privateName),
             paid: submitForm.paidAmount,
             relationship: submitForm.relationship,
             dateSubmitted: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
