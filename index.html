@@ -20,7 +20,7 @@
   <div id="root" class="flex-1 flex flex-col"></div>
 
   <script type="text/babel">
-    const { useState, useMemo, useEffect } = React;
+    const { useState, useMemo } = React;
 
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxmo88hrElpBl6V3o7j0MPDuxiWYwHXvph4Rrd1nx_AbYJw2vB3hXQIT8jvaX4FwsM5/exec";
     const ADMIN_PASSWORD = "10xadmin2026";
@@ -83,32 +83,13 @@
       { id: 'EV-104', title: 'Day 1 Course Material Outline', category: 'Shared PDF Note', date: '2024-10-12', description: 'Basic introductory slide deck showing lack of advanced modules.' }
     ];
 
-    // Helper function to mask submitter names securely
-    const maskName = (name) => {
-      if (!name || name === 'Anonymous') return 'Anonymous';
-      const parts = name.trim().split(' ');
-      const firstName = parts[0];
-      const lastName = parts.length > 1 ? parts[parts.length - 1].charAt(0) + '.' : '';
-      const maskedFirst = firstName.charAt(0) + '***';
-      return lastName ? `${maskedFirst} ${lastName}` : maskedFirst;
-    };
-
     function App() {
       const [adminAuthenticated, setAdminAuthenticated] = useState(false);
       const [passwordInput, setPasswordInput] = useState('');
       const [showAdminModal, setShowAdminModal] = useState(false);
       
-      // Load complaints and evidence from localStorage to persist data across page refreshes
-      const [complaints, setComplaints] = useState(() => {
-        const saved = localStorage.getItem('10xtrader_complaints');
-        return saved ? JSON.parse(saved) : INITIAL_COMPLAINTS;
-      });
-
-      const [evidenceItems, setEvidenceItems] = useState(() => {
-        const saved = localStorage.getItem('10xtrader_evidence');
-        return saved ? JSON.parse(saved) : INITIAL_EVIDENCE;
-      });
-
+      const [complaints, setComplaints] = useState(INITIAL_COMPLAINTS);
+      const [evidenceItems, setEvidenceItems] = useState(INITIAL_EVIDENCE);
       const [toastMessage, setToastMessage] = useState(null);
 
       const [submitForm, setSubmitForm] = useState({
@@ -124,15 +105,6 @@
       });
       const [submissionSuccess, setSubmissionSuccess] = useState(false);
       const [isUploading, setIsUploading] = useState(false);
-
-      // Save to localStorage whenever complaints or evidence items change
-      useEffect(() => {
-        localStorage.setItem('10xtrader_complaints', JSON.stringify(complaints));
-      }, [complaints]);
-
-      useEffect(() => {
-        localStorage.setItem('10xtrader_evidence', JSON.stringify(evidenceItems));
-      }, [evidenceItems]);
 
       const triggerToast = (msg) => {
         setToastMessage(msg);
@@ -210,11 +182,9 @@
           });
 
           const newId = `CMP-2026-${Math.floor(100 + Math.random() * 900)}`;
-          const maskedSubmitterName = maskName(submitForm.privateName);
-
           const newRecord = {
             id: newId,
-            submitter: maskedSubmitterName,
+            submitter: submitForm.privateName || 'Anonymous',
             paid: submitForm.paidAmount,
             relationship: submitForm.relationship,
             dateSubmitted: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
@@ -236,7 +206,7 @@
       };
 
       return (
-        <div className="min-h-screen bg-[#07090e] text-slate-200 flex flex-col justify-between selection:bg-red-600 selection:text-white">
+        <div className="min-h-screen bg-[#07090e] text-slate-200 font-sans min-h-screen flex flex-col justify-between selection:bg-red-600 selection:text-white">
           
           {toastMessage && (
             <div className="fixed bottom-6 right-6 z-50 bg-slate-900 border border-emerald-500/50 text-emerald-400 px-5 py-3 rounded-lg shadow-2xl">
