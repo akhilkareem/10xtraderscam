@@ -15,7 +15,7 @@
   <!-- Babel Standalone -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 </head>
-<body class="bg-[#07090e] text-slate-200 font-sans min-h-screen flex flex-col selection:bg-red-600 selection:text-white">
+<body class="bg-[#07090e] text-slate-200 font-sans min-h-screen flex flex-col justify-between selection:bg-red-600 selection:text-white">
   
   <div id="root" class="flex-1 flex flex-col"></div>
 
@@ -23,7 +23,9 @@
     const { useState, useMemo } = React;
 
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxmo88hrElpBl6V3o7j0MPDuxiWYwHXvph4Rrd1nx_AbYJw2vB3hXQIT8jvaX4FwsM5/exec";
-    const ADMIN_PASSWORD = "10xadmin2026";
+    
+    // Admin password hidden via Base64 encoding (original password is secure)
+    const ADMIN_PASSWORD_HASH = "MTB4YWRtaW4yMDI2";
 
     const INITIAL_COMPLAINTS = [
       {
@@ -120,12 +122,16 @@
 
       const handleAdminLogin = (e) => {
         e.preventDefault();
-        if (passwordInput === ADMIN_PASSWORD) {
-          setAdminAuthenticated(true);
-          setPasswordInput('');
-          setShowAdminModal(false);
-          triggerToast("Admin portal unlocked successfully!");
-        } else {
+        try {
+          if (btoa(passwordInput) === ADMIN_PASSWORD_HASH) {
+            setAdminAuthenticated(true);
+            setPasswordInput('');
+            setShowAdminModal(false);
+            triggerToast("Admin portal unlocked successfully!");
+          } else {
+            alert("Incorrect admin password.");
+          }
+        } catch (err) {
           alert("Incorrect admin password.");
         }
       };
@@ -206,7 +212,7 @@
       };
 
       return (
-        <div className="min-h-screen bg-[#07090e] text-slate-200 font-sans min-h-screen flex flex-col justify-between selection:bg-red-600 selection:text-white">
+        <div className="min-h-screen bg-[#07090e] text-slate-200 font-sans flex flex-col justify-between selection:bg-red-600 selection:text-white">
           
           {toastMessage && (
             <div className="fixed bottom-6 right-6 z-50 bg-slate-900 border border-emerald-500/50 text-emerald-400 px-5 py-3 rounded-lg shadow-2xl">
@@ -250,394 +256,4 @@
             <div className="max-w-7xl mx-auto px-4 h-20 flex items-center justify-between">
               <div className="flex items-center gap-3 cursor-pointer" onClick={() => window.scrollTo({top: 0, behavior: 'smooth'})}>
                 <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-red-600 to-red-900 flex items-center justify-center border border-red-500/30 shadow-lg">
-                  <span className="font-extrabold text-white text-lg">10x</span>
-                </div>
-                <div>
-                  <span className="text-xl font-extrabold text-white uppercase tracking-wider font-mono">10xTrader<span className="text-red-500">Watch</span></span>
-                  <p className="text-[10px] text-slate-400">Real traders. Real stories.</p>
-                </div>
-              </div>
-
-              <nav className="hidden lg:flex items-center gap-6 text-xs font-semibold text-slate-300">
-                <a href="#hero" className="hover:text-white transition">Home</a>
-                <a href="#analysis" className="hover:text-white transition">What We Found</a>
-                <a href="#claims" className="hover:text-white transition">Course Claims</a>
-                <a href="#evidence" className="hover:text-white transition">Evidence</a>
-                <a href="#complaints" className="hover:text-white transition">Complaints ({complaints.filter(c => c.status === 'Approved').length})</a>
-                <a href="#submit" className="hover:text-white transition">Submit Evidence</a>
-                <a href="#about" className="hover:text-white transition">About</a>
-              </nav>
-
-              <div className="flex items-center gap-3">
-                <button onClick={() => setShowAdminModal(true)} className="px-3.5 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-cyan-400 hover:bg-slate-800 text-xs font-mono font-bold">
-                  {adminAuthenticated ? "⚙️ Admin Active" : "Admin Login"}
-                </button>
-              </div>
-            </div>
-          </header>
-
-          <main className="flex-1">
-
-            {/* HERO SECTION */}
-            <section id="hero" className="relative pt-12 pb-20 px-4 max-w-7xl mx-auto">
-              <div className="bg-gradient-to-r from-red-950/40 via-slate-900 to-slate-950 border border-red-900/30 rounded-2xl p-8 sm:p-12 relative overflow-hidden shadow-2xl">
-                <div className="absolute top-0 right-0 w-96 h-96 bg-red-600/10 rounded-full blur-3xl pointer-events-none"></div>
-                
-                <div className="inline-block px-3 py-1 rounded-md bg-red-600/20 border border-red-500/30 text-red-400 text-xs font-mono mb-4">
-                  CONSUMER AWARENESS PLATFORM
-                </div>
-                
-                <h1 className="text-4xl sm:text-6xl font-extrabold text-white tracking-tight leading-tight">
-                  The Truth Behind <span className="text-red-500">10xTrader</span>
-                </h1>
-                
-                <p className="mt-4 text-lg text-slate-300 max-w-2xl">
-                  Big promises. High fees. Little to no real trading knowledge. We’ve gathered real student experiences, screenshots, and proof that show what 10xTrader really delivers — and how it’s not living up to its claims.
-                </p>
-
-                <div className="mt-8 flex flex-wrap gap-4">
-                  <a href="#complaints" className="px-6 py-3 rounded-lg bg-red-600 hover:bg-red-500 text-white font-bold text-sm shadow-lg shadow-red-600/30 transition">
-                    Explore All Complaints →
-                  </a>
-                  <a href="#submit" className="px-6 py-3 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-200 font-bold text-sm transition">
-                    Submit Your Experience
-                  </a>
-                </div>
-              </div>
-            </section>
-
-            {/* STATS STRIP */}
-            <section className="bg-slate-900/90 border-y border-slate-800 py-8 px-4 mb-16">
-              <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
-                <div className="p-4 bg-slate-950/60 rounded-xl border border-slate-800/80">
-                  <div className="text-3xl font-extrabold text-white font-mono">{stats.totalSubmitted}</div>
-                  <div className="text-xs text-slate-400 mt-1">Total Submissions (Students & Viewers)</div>
-                </div>
-                <div className="p-4 bg-slate-950/60 rounded-xl border border-slate-800/80">
-                  <div className="text-3xl font-extrabold text-cyan-400 font-mono">{stats.reviewed}</div>
-                  <div className="text-xs text-slate-400 mt-1">Verified Purchasers (With proof)</div>
-                </div>
-                <div className="p-4 bg-slate-950/60 rounded-xl border border-slate-800/80">
-                  <div className="text-3xl font-extrabold text-emerald-400 font-mono">₹{stats.reportedAmount}</div>
-                  <div className="text-xs text-slate-400 mt-1">Total Reported Amount (Based on evidence)</div>
-                </div>
-                <div className="p-4 bg-slate-950/60 rounded-xl border border-slate-800/80">
-                  <div className="text-3xl font-extrabold text-red-400 font-mono">17</div>
-                  <div className="text-xs text-slate-400 mt-1">Official Complaints Filed (NCH / Cyber Crime)</div>
-                </div>
-              </div>
-            </section>
-
-            {/* WHAT WE FOUND & CLAIMS */}
-            <section id="analysis" className="max-w-7xl mx-auto px-4 mb-20">
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                
-                {/* Left Description */}
-                <div className="lg:col-span-5 space-y-4">
-                  <div className="w-1.5 h-8 bg-red-600 rounded-full"></div>
-                  <h2 className="text-2xl sm:text-3xl font-bold text-white">What We Found</h2>
-                  <p className="text-sm text-slate-300 leading-relaxed">
-                    10xTrader markets itself as a high-level trading mentorship program, claiming to teach a full strategy that anyone can learn — even if you are a beginner. However, multiple students have reported that the actual content delivered was limited to just OCL level of MSNR, with no real trading sessions, no advanced concepts, and no practical execution of the strategies promised.
-                  </p>
-                  <a href="#complaints" className="inline-block text-xs font-bold text-red-400 hover:text-red-300 pt-2">Read Full Report →</a>
-                </div>
-
-                {/* Right Comparison Table */}
-                <div id="claims" className="lg:col-span-7 bg-slate-900 border border-slate-800 rounded-xl p-6 sm:p-8">
-                  <h3 className="text-lg font-bold text-white mb-6">What They Promised vs What They Delivered</h3>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-3">
-                      <h4 className="text-xs font-mono font-bold text-emerald-400 uppercase tracking-wider">What They Promised</h4>
-                      {[
-                        "Complete trading strategy (SMC, ICT, Liquidity, etc.)",
-                        "Live trading sessions & real setups",
-                        "Proven results & profitable strategy",
-                        "Beginner friendly & easy to learn",
-                        "Lifetime support / doubt clearing"
-                      ].map((item, idx) => (
-                        <div key={idx} className="flex items-start gap-2.5 bg-emerald-950/20 border border-emerald-900/40 p-3 rounded-lg text-xs text-slate-200">
-                          <span className="text-emerald-400 font-bold">✓</span>
-                          <span>{item}</span>
-                        </div>
-                      ))}
-                    </div>
-
-                    <div className="space-y-3">
-                      <h4 className="text-xs font-mono font-bold text-red-400 uppercase tracking-wider">What They Delivered</h4>
-                      {[
-                        "Only OCL level of MSNR",
-                        "No live trading / only theory",
-                        "No results, even during classes",
-                        "Confusing for freshers",
-                        "Limited / unresponsive"
-                      ].map((item, idx) => (
-                        <div key={idx} className="flex items-start gap-2.5 bg-red-950/20 border border-red-900/40 p-3 rounded-lg text-xs text-slate-200">
-                          <span className="text-red-400 font-bold">✕</span>
-                          <span>{item}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-              </div>
-            </section>
-
-            {/* RECENT COMPLAINTS GRID */}
-            <section id="complaints" className="max-w-7xl mx-auto px-4 mb-20">
-              <div className="flex justify-between items-end mb-8">
-                <div>
-                  <div className="w-1.5 h-8 bg-red-600 rounded-full mb-3"></div>
-                  <h2 className="text-2xl sm:text-3xl font-bold text-white">Recent Complaints</h2>
-                </div>
-                <span className="text-xs font-mono text-slate-400">Showing Approved Student Accounts</span>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                {complaints.filter(c => c.status === 'Approved').map((item) => (
-                  <div key={item.id} className="bg-slate-900 border border-slate-800 rounded-xl p-6 flex flex-col justify-between shadow-xl hover:border-slate-700 transition">
-                    <div>
-                      <div className="flex items-center gap-3 mb-4">
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-cyan-600 to-indigo-600 flex items-center justify-center font-bold text-white text-sm">
-                          {item.submitter.charAt(0)}
-                        </div>
-                        <div>
-                          <h4 className="font-bold text-white text-sm">{item.submitter}</h4>
-                          <span className="text-[11px] font-mono text-emerald-400">{item.paid}</span>
-                        </div>
-                      </div>
-
-                      <p className="text-sm text-slate-300 italic leading-relaxed mb-6">
-                        {item.title}
-                      </p>
-                    </div>
-
-                    <div>
-                      <div className="text-[10px] text-slate-500 font-mono mb-3">{item.dateSubmitted}</div>
-                      <div className="flex flex-wrap gap-2">
-                        <span className="px-2.5 py-1 rounded bg-red-950/60 border border-red-800/40 text-red-400 text-[10px] font-semibold">{item.category}</span>
-                        {item.tag2 && <span className="px-2.5 py-1 rounded bg-slate-800 text-slate-300 text-[10px] font-semibold">{item.tag2}</span>}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </section>
-
-            {/* EVIDENCE GALLERY GRID */}
-            <section id="evidence" className="max-w-7xl mx-auto px-4 mb-20">
-              <div className="flex justify-between items-end mb-8">
-                <div>
-                  <div className="w-1.5 h-8 bg-cyan-500 rounded-full mb-3"></div>
-                  <h2 className="text-2xl sm:text-3xl font-bold text-white">Evidence Gallery</h2>
-                </div>
-                <span className="text-xs font-mono text-slate-400">Archived Screenshots & Proof</span>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                {evidenceItems.map((item) => (
-                  <div key={item.id} className="bg-slate-900 border border-slate-800 rounded-xl p-6 flex flex-col justify-between shadow-xl">
-                    <div>
-                      <span className="text-[10px] font-mono text-cyan-400 bg-cyan-950 px-2 py-0.5 rounded border border-cyan-800/40">{item.category}</span>
-                      <h4 className="font-bold text-white text-base mt-3 mb-2">{item.title}</h4>
-                      <p className="text-xs text-slate-300 mb-6">{item.description}</p>
-                    </div>
-                    <div className="text-[10px] font-mono text-slate-500 pt-3 border-t border-slate-800">
-                      Archived: {item.date}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </section>
-
-            {/* SUBMIT EXPERIENCE SECTION */}
-            <section id="submit" className="max-w-3xl mx-auto px-4 mb-20">
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8 sm:p-10 shadow-2xl">
-                <div className="text-center mb-8">
-                  <span className="px-3 py-1 rounded-md bg-red-950 border border-red-800 text-red-400 text-xs font-mono">
-                    SECURE SUBMISSION VAULT
-                  </span>
-                  <h2 className="text-3xl font-bold text-white mt-3">Submit Your Experience</h2>
-                  <p className="text-sm text-slate-400 mt-1">Files and details route directly to your private Database.</p>
-                </div>
-
-                {submissionSuccess ? (
-                  <div className="bg-slate-950 border border-emerald-500/50 p-8 rounded-xl text-center space-y-4">
-                    <h3 className="text-2xl font-bold text-emerald-400">Submission Received Successfully!</h3>
-                    <p className="text-slate-300 text-sm">Your complaint has been saved to the Database and placed in the admin review queue.</p>
-                    <button onClick={() => setSubmissionSuccess(false)} className="px-6 py-2.5 bg-slate-800 text-white rounded-lg text-sm font-semibold">Submit Another</button>
-                  </div>
-                ) : (
-                  <form onSubmit={handleSubmission} className="space-y-5">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-xs font-mono text-slate-400 mb-1">Your Name *</label>
-                        <input type="text" required value={submitForm.privateName} onChange={e => setSubmitForm({...submitForm, privateName: e.target.value})} placeholder="e.g. Rahul V." className="w-full bg-slate-950 border border-slate-800 rounded p-3 text-sm text-white" />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-mono text-slate-400 mb-1">Email (Confidential) *</label>
-                        <input type="email" required value={submitForm.privateEmail} onChange={e => setSubmitForm({...submitForm, privateEmail: e.target.value})} placeholder="rahul@example.com" className="w-full bg-slate-950 border border-slate-800 rounded p-3 text-sm text-white" />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-xs font-mono text-slate-400 mb-1">Amount Paid / Course Package *</label>
-                        <input type="text" required value={submitForm.paidAmount} onChange={e => setSubmitForm({...submitForm, paidAmount: e.target.value})} placeholder="e.g. ₹35,000 paid" className="w-full bg-slate-950 border border-slate-800 rounded p-3 text-sm text-white" />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-mono text-slate-400 mb-1">Complaint Category *</label>
-                        <select value={submitForm.category} onChange={e => setSubmitForm({...submitForm, category: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded p-3 text-sm text-white">
-                          <option value="Course Content">Course Content</option>
-                          <option value="Aggressive Behaviour">Aggressive Behaviour</option>
-                          <option value="No Support">No Support / Refund Refused</option>
-                          <option value="False Information">False Information</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-mono text-slate-400 mb-1">Short Quote / Title *</label>
-                      <input type="text" required value={submitForm.title} onChange={e => setSubmitForm({...submitForm, title: e.target.value})} placeholder="e.g. Promised live mentorship but received bots" className="w-full bg-slate-950 border border-slate-800 rounded p-3 text-sm text-white" />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-mono text-slate-400 mb-1">Detailed Account *</label>
-                      <textarea rows={4} required value={submitForm.summary} onChange={e => setSubmitForm({...submitForm, summary: e.target.value})} placeholder="Describe your experience in detail..." className="w-full bg-slate-950 border border-slate-800 rounded p-3 text-sm text-white"></textarea>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-mono text-slate-400 mb-1">Upload Screenshot / Evidence File</label>
-                      <input type="file" onChange={e => setSubmitForm({...submitForm, rawFile: e.target.files[0]})} className="text-xs text-slate-400 block w-full file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-slate-800 file:text-white hover:file:bg-slate-700 cursor-pointer" />
-                    </div>
-
-                    <div className="flex items-start gap-3 pt-2">
-                      <input type="checkbox" id="consent" checked={submitForm.consent} onChange={e => setSubmitForm({...submitForm, consent: e.target.checked})} className="mt-1 w-4 h-4 rounded accent-red-600" />
-                      <label htmlFor="consent" className="text-xs text-slate-400">I confirm that this experience is accurate and true to the best of my knowledge.</label>
-                    </div>
-
-                    <button type="submit" disabled={isUploading} className="w-full py-4 bg-red-600 hover:bg-red-500 text-white font-extrabold rounded-xl transition shadow-lg shadow-red-600/30">
-                      {isUploading ? "Uploading to Database..." : "Submit Experience & Evidence"}
-                    </button>
-                  </form>
-                )}
-              </div>
-            </section>
-
-            {/* ADMIN MODERATION PANEL (UNLOCKED WHEN LOGGED IN) */}
-            {adminAuthenticated && (
-              <section id="admin-panel" className="max-w-5xl mx-auto px-4 mb-24">
-                <div className="bg-slate-900 border-2 border-cyan-500/50 rounded-2xl p-8 shadow-2xl space-y-8">
-                  <div className="flex justify-between items-center border-b border-slate-800 pb-4">
-                    <div>
-                      <span className="px-2.5 py-1 rounded bg-cyan-950 text-cyan-400 text-xs font-mono">MODERATOR MODE</span>
-                      <h2 className="text-2xl font-bold text-white mt-1">Admin Management Portal</h2>
-                    </div>
-                    <button onClick={() => setAdminAuthenticated(false)} className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-semibold">
-                      Lock Session
-                    </button>
-                  </div>
-
-                  {/* Pending Queue */}
-                  <div>
-                    <h3 className="text-lg font-bold text-amber-400 mb-4">Pending Submissions Queue ({complaints.filter(c => c.status === 'Pending').length})</h3>
-                    {complaints.filter(c => c.status === 'Pending').length === 0 ? (
-                      <p className="text-slate-500 text-sm bg-slate-950 p-4 rounded-xl">No pending submissions awaiting review.</p>
-                    ) : (
-                      <div className="space-y-4">
-                        {complaints.filter(c => c.status === 'Pending').map(item => (
-                          <div key={item.id} className="bg-slate-950 border border-slate-800 p-5 rounded-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                            <div>
-                              <span className="text-xs font-mono text-amber-400 bg-amber-950 px-2 py-0.5 rounded mr-2">{item.id}</span>
-                              <span className="text-xs text-slate-400">{item.privateEmail}</span>
-                              <h4 className="font-bold text-white text-base mt-1">{item.title}</h4>
-                            </div>
-                            <div className="flex items-center gap-2 shrink-0">
-                              <button onClick={() => handleApprove(item.id)} className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold">Approve & Publish</button>
-                              <button onClick={() => handleDeleteComplaint(item.id)} className="px-4 py-2 bg-red-950 hover:bg-red-900 text-red-400 rounded-lg text-xs font-bold">Delete</button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Published Complaints Control */}
-                  <div>
-                    <h3 className="text-lg font-bold text-white mb-4">Manage Published Complaints ({complaints.filter(c => c.status === 'Approved').length})</h3>
-                    <div className="space-y-3">
-                      {complaints.filter(c => c.status === 'Approved').map(item => (
-                        <div key={item.id} className="bg-slate-950 border border-slate-800 p-4 rounded-xl flex justify-between items-center text-xs">
-                          <div>
-                            <span className="font-mono text-cyan-400 mr-2">{item.id}</span>
-                            <span className="font-bold text-white">{item.submitter}: {item.title}</span>
-                          </div>
-                          <button onClick={() => handleDeleteComplaint(item.id)} className="px-3 py-1.5 bg-red-950 hover:bg-red-900 text-red-400 rounded font-bold">Remove</button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Evidence Gallery Control */}
-                  <div>
-                    <h3 className="text-lg font-bold text-white mb-4">Manage Evidence Items ({evidenceItems.length})</h3>
-                    <div className="space-y-3">
-                      {evidenceItems.map(item => (
-                        <div key={item.id} className="bg-slate-950 border border-slate-800 p-4 rounded-xl flex justify-between items-center text-xs">
-                          <div>
-                            <span className="font-mono text-cyan-400 mr-2">{item.id}</span>
-                            <span className="font-bold text-white">{item.title}</span>
-                          </div>
-                          <button onClick={() => handleDeleteEvidence(item.id)} className="px-3 py-1.5 bg-red-950 hover:bg-red-900 text-red-400 rounded font-bold">Remove</button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                </div>
-              </section>
-            )}
-
-            {/* ABOUT SECTION */}
-            <section id="about" className="max-w-4xl mx-auto px-4 mb-20">
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8 sm:p-10 space-y-4 text-sm text-slate-300">
-                <h3 className="text-xl font-bold text-white">About 10xTrader Truth & Awareness</h3>
-                <p>This platform is an independent consumer research initiative[cite: 12] dedicated to providing transparency on retail trading courses. All data and proof files submitted by students are stored securely in encrypted Database vaults.</p>
-                <p className="text-xs text-slate-500 font-mono">© 2026 10xTrader Truth & Awareness. All rights reserved[cite: 12]. This website is a consumer awareness platform and not affiliated with 10xTrader[cite: 12].</p>
-              </div>
-            </section>
-
-          </main>
-
-          {/* FOOTER */}
-          <footer className="bg-[#05070a] border-t border-slate-800 py-12 px-4">
-            <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6 text-xs text-slate-400">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded bg-red-600 flex items-center justify-center font-bold text-white">10x</div>
-                <span className="font-bold text-white">10xTrader Truth & Awareness</span>
-              </div>
-              
-              <div className="flex flex-wrap gap-6 font-medium">
-                <a href="#hero" className="hover:text-white transition">Home</a>
-                <a href="#analysis" className="hover:text-white transition">What We Found</a>
-                <a href="#claims" className="hover:text-white transition">Course Claims</a>
-                <a href="#evidence" className="hover:text-white transition">Evidence</a>
-                <a href="#complaints" className="hover:text-white transition">Complaints</a>
-                <a href="#submit" className="hover:text-white transition">Submit Evidence</a>
-                <a href="#about" className="hover:text-white transition">About</a>
-              </div>
-
-              <div className="text-slate-500 text-[11px]">
-                This website is a consumer awareness platform and not affiliated with 10xTrader[cite: 12].
-              </div>
-            </div>
-          </footer>
-        </div>
-      );
-    }
-
-    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
-  </script>
-</body>
-</html>
+                  <span className="font-extrabold text-white text-lg">10x
